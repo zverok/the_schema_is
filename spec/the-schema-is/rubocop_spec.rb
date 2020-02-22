@@ -1,4 +1,4 @@
-RSpec.describe TheSchemaIs::Cop::Content do
+RSpec.xdescribe TheSchemaIs::Cop::Content do
   subject(:cop) { described_class.new }
 
   # TODO: Or just use FakeFS to easier show it the schema?..
