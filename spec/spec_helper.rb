@@ -3,6 +3,9 @@ require 'rubocop'
 require 'rubocop/rspec/support'
 require 'the_schema_is'
 
+require 'rspec/its'
+require 'saharspec'
+
 RSpec.configure do |config|
 
   config.order = :random
