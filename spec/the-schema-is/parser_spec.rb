@@ -26,6 +26,14 @@ RSpec.describe TheSchemaIs::Parser do
     it_behaves_like 'model extractor',
       <<~RUBY,
       class User < ActiveRecord::Base
+        self.table_name = 'authors'
+      end
+      RUBY
+      {class_name: 'User', table_name: 'authors', schema: nil}
+
+    it_behaves_like 'model extractor',
+      <<~RUBY,
+      class User < ActiveRecord::Base
         the_schema_is do |t|
           t.string "name"
         end

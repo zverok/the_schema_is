@@ -2,6 +2,8 @@ require 'active_support/inflector'
 
 module TheSchemaIs
   module Parser
+    using NodeRefinements
+
     # See https://github.com/rails/rails/blob/f33d52c95217212cbacc8d5e44b5a8e3cdc6f5b3/activerecord/lib/active_record/connection_adapters/abstract/schema_definitions.rb#L217
     # TODO: numeric is just an alias for decimal
     # TODO: different adapters can add another types (jsonb for Postgres)
@@ -20,17 +22,23 @@ module TheSchemaIs
     end
 
     def self.model(ast)
-      Fast.search('(class $_ {(const nil :ApplicationRecord) (const (const nil :ActiveRecord) :Base)})', ast).each_slice(2)
+      ast.ffast('(class $_ {(const nil :ApplicationRecord) (const (const nil :ActiveRecord) :Base)})').each_slice(2)
           .map { |node, name|
             class_name = Unparser.unparse(name.first)
-            schema = Fast.search('$(block (send nil :the_schema_is) _ ...', node)&.last
+            schema = node.ffast('$(block (send nil :the_schema_is) _ ...')&.last
+            # TODO: https://api.rubyonrails.org/classes/ActiveRecord/ModelSchema/ClassMethods.html#method-i-table_name
+            # * consider table_prefix/table_suffix settings
+            # * also, consider engines!
+            table_name = node.ffast('(send self $_ (str $_)').each_slice(3)
+              .find { |_, meth, | meth == :table_name= } # FIXME: should be possible with Fast statement?..
+              &.last
             Model.new(
               class_name: class_name,
               # TODO:
               # * search for self.table_name = ...
               # * check with namespaces and other stuff
               # * then, allow to configure in other ways
-              table_name: ActiveSupport::Inflector.tableize(class_name),
+              table_name: table_name || ActiveSupport::Inflector.tableize(class_name),
               source: node,
               schema: schema
             )

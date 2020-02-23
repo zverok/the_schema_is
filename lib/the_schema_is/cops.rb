@@ -2,21 +2,8 @@ require 'memoist'
 
 module TheSchemaIs
   module Cops
-    using(Module.new do
-      refine ::Parser::AST::Node do
-        def ffast(expr)
-          Fast.search(expr, self)
-        end
+    using NodeRefinements
 
-        def ffast_match?(expr)
-          Fast.match?(expr, self)
-        end
-
-        def arraify
-          type == :begin ? children : [self]
-        end
-      end
-    end)
     module Common
       extend Memoist
 
@@ -131,8 +118,15 @@ module TheSchemaIs
 
       def autocorrect(node)
         lambda do |corrector|
-          # FIXME: doesn't removes extra empty lines yet
-          extra_columns.each { |_, col| corrector.remove(col.source.loc.expression) }
+          extra_columns.each do |_, col|
+            src_range = col.source.loc.expression
+            end_pos = col.source.next_sibling.then { |n|
+              n ? n.loc.expression.begin_pos - 2 : col.source.find_parent(:block).loc.end.begin_pos
+            }
+            range =
+              ::Parser::Source::Range.new(src_range.source_buffer, src_range.begin_pos - 2, end_pos)
+            corrector.remove(range)
+          end
         end
       end
 
