@@ -32,6 +32,18 @@ RSpec.describe TheSchemaIs::Cops do
       RUBY
     }
 
+    specify {
+      expect_offense(<<~RUBY)
+        class Dog < ApplicationRecord
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Table "dogs" is not defined in db/schema.rb
+
+          the_schema_is do
+            t.string "name"
+          end
+        end
+      RUBY
+    }
+
     it_behaves_like 'autocorrect', <<~SRC_RUBY,
       class Comment < ApplicationRecord
       end

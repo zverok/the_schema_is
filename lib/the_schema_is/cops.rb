@@ -42,9 +42,12 @@ module TheSchemaIs
     class Presence < RuboCop::Cop::Cop
       include Common
 
-      MSG = 'The schema is not defined for the model'
+      MSG_NO_MODEL_SCHEMA = 'The schema is not defined for the model'
+      MSG_NO_DB_SCHEMA = 'Table "%s" is not defined in db/schema.rb'
 
       def autocorrect(node)
+        return unless schema
+
         statements = schema.ffast('(block (send nil :create_table) (args) $...)').last.last.arraify
 
         lambda do |corrector|
@@ -63,7 +66,8 @@ module TheSchemaIs
       private
 
       def validate
-        add_offense(model.source) if model.schema.nil?
+        add_offense(model.source, message: MSG_NO_DB_SCHEMA % model.table_name) if schema.nil?
+        add_offense(model.source, message: MSG_NO_MODEL_SCHEMA) if model.schema.nil?
       end
     end
 
@@ -99,7 +103,7 @@ module TheSchemaIs
       private
 
       def validate
-        return if model.schema.nil?
+        return if model.schema.nil? || schema.nil?
 
         missing_columns.each do |_, col|
           add_offense(model.schema, message: MSG % col.name)
@@ -133,7 +137,7 @@ module TheSchemaIs
       private
 
       def validate
-        return if model.schema.nil?
+        return if model.schema.nil? || schema.nil?
 
         extra_columns.each do |_, col|
           add_offense(col.source, message: MSG % col.name)
@@ -161,7 +165,7 @@ module TheSchemaIs
       private
 
       def validate
-        return if model.schema.nil?
+        return if model.schema.nil? || schema.nil?
 
         wrong_columns
           .each do |mcol, scol|
@@ -174,9 +178,6 @@ module TheSchemaIs
           .map { |name, col| [col, schema_columns[name]] }
           .reject { |mcol, scol| mcol.type == scol.type && mcol.definition_source == scol.definition_source }
       end
-    end
-
-    class ColumnDefinitionsDiffer < RuboCop::Cop::Cop
     end
   end
 end
