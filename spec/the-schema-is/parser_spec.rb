@@ -81,5 +81,12 @@ RSpec.describe TheSchemaIs::Parser do
         t.datetime "created_at", null: false
       RUBY
       [{name: 'created_at', definition_source: {null: false}}]
+
+    it_behaves_like 'column extractor',
+      <<~RUBY,
+        t.datetime "created_at"
+        t.index "created_at"
+      RUBY
+      [{name: 'created_at'}]
   end
 end

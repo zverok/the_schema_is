@@ -8,7 +8,8 @@ module TheSchemaIs
     # TODO: numeric is just an alias for decimal
     # TODO: different adapters can add another types (jsonb for Postgres)
     COLUMN_TYPES = [:bigint, :binary, :boolean, :date, :datetime, :decimal, :numeric,
-          :float, :integer, :json, :string, :text, :time, :timestamp, :virtual]
+          :float, :integer, :json, :string, :text, :time, :timestamp, :virtual] +
+          [:jsonb] # Postgres
 
     Model = Struct.new(:class_name, :table_name, :source, :schema, keyword_init: true)
     class Column < Struct.new(:name, :type, :definition, :source, keyword_init: true)
@@ -60,14 +61,12 @@ module TheSchemaIs
     end
 
     def self.columns(ast)
-      content = ast.type == :begin ? ast.children : [ast]
-      content.map { |node|
-        # TODO: Only if name in COLUMN_TYPES, otherwise it could be something like t.index
+      ast.arraify.map { |node|
         # FIXME: Of course it should be easier to say "optional additional params"
         if (type, name, defs = Fast.match?('(send {(send nil t) (lvar t)} $_ (str $_) $...', node))
-          Column.new(name: name, type: type, definition: defs, source: node)
+          Column.new(name: name, type: type, definition: defs, source: node) if COLUMN_TYPES.include?(type)
         elsif (type, name = Fast.match?('(send {(send nil t) (lvar t)} $_ (str $_)', node))
-          Column.new(name: name, type: type, source: node)
+          Column.new(name: name, type: type, source: node) if COLUMN_TYPES.include?(type)
         end
       }.compact
     end
