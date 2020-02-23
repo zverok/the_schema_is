@@ -62,6 +62,7 @@ module TheSchemaIs
 
     def self.columns(ast)
       ast.arraify.map { |node|
+        # TODO: old t.column :name, :type also should be supported!
         # FIXME: Of course it should be easier to say "optional additional params"
         if (type, name, defs = Fast.match?('(send {(send nil t) (lvar t)} $_ (str $_) $...', node))
           Column.new(name: name, type: type, definition: defs, source: node) if COLUMN_TYPES.include?(type)

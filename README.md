@@ -106,7 +106,7 @@ The block isn't even evaluated at all (so potentially can contain any code, and 
     - the-schema-is/rubocop
   ```
 3. Run `rubocop` and see what it now says about your models.
-4. Now you can add schema definitions manually, or allow `rubocop --auto-fix` to do its job! (NB: you can always use `rubocop --auto-fix --cops TheSchemaIs/Content` to auto-fix ONLY this schema thing)
+4. Now you can add schema definitions manually, or allow `rubocop --auto-fix` to do its job! (NB: you can always use `rubocop --auto-fix --only TheSchemaIs/Content` to auto-fix ONLY this schema thing)
 
 The cop supports some configuration, you can see the current one with `rubocop --show-cops TheSchemaIs/Content`
 
