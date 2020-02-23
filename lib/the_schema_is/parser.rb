@@ -26,8 +26,9 @@ module TheSchemaIs
           .each_slice(2).to_h { |t, name| [Array(name).first, t] } # FIXME: Why it sometimes makes arrays, and sometimes not?..
     end
 
-    def self.model(ast)
-      ast.ffast('(class $_ {(const nil :ApplicationRecord) (const (const nil :ActiveRecord) :Base)})').each_slice(2)
+    def self.model(ast, base_classes = %w[ActiveRecord::Base ApplicationRecord])
+      base = base_classes_query(base_classes)
+      ast.ffast("(class $_ #{base})").each_slice(2)
           .map { |node, name|
             class_name = Unparser.unparse(name.first)
             schema = node.ffast('$(block (send nil :the_schema_is) _ ...')&.last
@@ -49,6 +50,13 @@ module TheSchemaIs
             )
           }
           .first
+    end
+
+    def self.base_classes_query(classes)
+      classes
+        .map { |cls| cls.split('::').inject('nil') { |res, str| "(const #{res} :#{str})" } }
+        .join(' ')
+        .then { |str| "{#{str}}" }
     end
 
     def self.columns(ast)

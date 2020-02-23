@@ -73,6 +73,25 @@ RSpec.describe TheSchemaIs, :config do
       }
     end
 
+    context 'with different base class' do
+      let(:real_config) { {BaseClass: ['Base']} }
+
+      specify {
+        expect_no_offenses(<<~RUBY)
+          class Comment < ApplicationRecord
+          end
+        RUBY
+      }
+
+      specify {
+        expect_offense(<<~RUBY)
+          class Comment < Base
+          ^^^^^^^^^^^^^^^^^^^^ The schema is not defined for the model
+          end
+        RUBY
+      }
+    end
+
     it_behaves_like 'autocorrect', <<~SRC_RUBY,
       class Comment < ApplicationRecord
       end

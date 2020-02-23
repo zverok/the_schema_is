@@ -7,7 +7,8 @@ module TheSchemaIs
     extend Memoist
 
     def on_class(node)
-      @model = Parser.model(node) or return
+      base = cop_config.fetch('BaseClass')
+      @model = Parser.model(node, base) or return
 
       validate
     end
