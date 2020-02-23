@@ -2,6 +2,21 @@ require 'memoist'
 
 module TheSchemaIs
   module Cops
+    using(Module.new do
+      refine ::Parser::AST::Node do
+        def ffast(expr)
+          Fast.search(expr, self)
+        end
+
+        def ffast_match?(expr)
+          Fast.match?(expr, self)
+        end
+
+        def arraify
+          type == :begin ? children : [self]
+        end
+      end
+    end)
     module Common
       extend Memoist
 
@@ -25,13 +40,13 @@ module TheSchemaIs
       end
 
       memoize def model_columns
-        statements = Fast.search('(block (send nil :the_schema_is) (args) $...)', model.schema).last.last
+        statements = model.schema.ffast('(block (send nil :the_schema_is) (args) $...)').last.last
 
         Parser.columns(statements).to_h { |col| [col.name, col] }
       end
 
       memoize def schema_columns
-        statements = Fast.search('(block (send nil :create_table) (args) $...)', schema).last.last
+        statements = schema.ffast('(block (send nil :create_table) (args) $...)').last.last
 
         Parser.columns(statements).to_h { |col| [col.name, col] }
       end
@@ -41,6 +56,21 @@ module TheSchemaIs
       include Common
 
       MSG = 'The schema is not defined for the model'
+
+      def autocorrect(node)
+        statements = schema.ffast('(block (send nil :create_table) (args) $...)').last.last.arraify
+        indent = node.loc.expression.begin_pos + 2
+        code = [
+          'the_schema_is do |t|',
+          *statements.map { |s| "  #{s.loc.expression.source}"},
+          'end',
+        ].map { |s| ' ' * indent + s }.join("\n").then { |s| "\n#{s}\n" }
+
+        lambda do |corrector|
+          # in "class User < ActiveRecord::Base" -- second child is "ActiveRecord::Base"
+          corrector.insert_after(node.children[1].loc.expression, code)
+        end
+      end
 
       private
 

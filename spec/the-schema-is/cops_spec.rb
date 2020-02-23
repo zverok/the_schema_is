@@ -26,6 +26,26 @@ RSpec.describe TheSchemaIs::Cops do
         end
       RUBY
     }
+
+    describe '#autocorrect' do
+      subject { method(:autocorrect_source) }
+
+      its_call(<<~SRC_RUBY) { is_expected.to ret <<~DST_RUBY }
+        class Comment < ApplicationRecord
+        end
+      SRC_RUBY
+        class Comment < ApplicationRecord
+          the_schema_is do |t|
+            t.text     "body"
+            t.integer  "user_id"
+            t.integer  "article_id"
+            t.datetime "created_at", null: false
+            t.datetime "updated_at", null: false
+          end
+
+        end
+      DST_RUBY
+    end
   end
 
   describe TheSchemaIs::Cops::MissingColumn do

@@ -4,6 +4,7 @@ module TheSchemaIs
   module Parser
     # See https://github.com/rails/rails/blob/f33d52c95217212cbacc8d5e44b5a8e3cdc6f5b3/activerecord/lib/active_record/connection_adapters/abstract/schema_definitions.rb#L217
     # TODO: numeric is just an alias for decimal
+    # TODO: different adapters can add another types (jsonb for Postgres)
     COLUMN_TYPES = [:bigint, :binary, :boolean, :date, :datetime, :decimal, :numeric,
           :float, :integer, :json, :string, :text, :time, :timestamp, :virtual]
 
