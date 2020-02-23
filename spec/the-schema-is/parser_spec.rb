@@ -75,5 +75,11 @@ RSpec.describe TheSchemaIs::Parser do
         t.integer "user_id"
       RUBY
       [{name: 'name', type: :string}, {name: 'user_id', type: :integer}]
+
+    it_behaves_like 'column extractor',
+      <<~RUBY,
+        t.datetime "created_at", null: false
+      RUBY
+      [{name: 'created_at', definition_source: {null: false}}]
   end
 end

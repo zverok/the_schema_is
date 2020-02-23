@@ -145,16 +145,14 @@ module TheSchemaIs
       end
     end
 
-    class WrongColumnType < RuboCop::Cop::Cop
+    class WrongColumnDefinition < RuboCop::Cop::Cop
       include Common
 
-      MSG = 'Wrong column type for "%s": expected %s'
+      MSG = 'Wrong column definition: expected `%s`'
 
       def autocorrect(node)
         lambda do |corrector|
-          wrong_type_columns.each do |mcol, scol|
-            # FIXME: It is easier to just replace the whole definition, though it conflicts
-            # with idea of separated type/definition cops. Maybe it is a wrong idea, after all :)
+          wrong_columns.each do |mcol, scol|
             corrector.replace(mcol.source.loc.expression, scol.source.loc.expression.source)
           end
         end
@@ -165,16 +163,16 @@ module TheSchemaIs
       def validate
         return if model.schema.nil?
 
-        wrong_type_columns
+        wrong_columns
           .each do |mcol, scol|
-            add_offense(mcol.source, message: MSG % [mcol.name, scol.type])
+            add_offense(mcol.source, message: MSG % scol.source.loc.expression.source)
           end
       end
 
-      def wrong_type_columns
+      def wrong_columns
         model_columns
           .map { |name, col| [col, schema_columns[name]] }
-          .reject { |mcol, scol| mcol.type == scol.type }
+          .reject { |mcol, scol| mcol.type == scol.type && mcol.definition_source == scol.definition_source }
       end
     end
 

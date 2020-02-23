@@ -11,7 +11,12 @@ module TheSchemaIs
           :float, :integer, :json, :string, :text, :time, :timestamp, :virtual]
 
     Model = Struct.new(:class_name, :table_name, :source, :schema, keyword_init: true)
-    Column = Struct.new(:name, :type, :definition, :source, keyword_init: true)
+    class Column < Struct.new(:name, :type, :definition, :source, keyword_init: true)
+      def definition_source
+        return unless definition
+        eval('{' + definition.loc.expression.source + '}')
+      end
+    end
 
     def self.schema(path)
       ast = Fast.ast(File.read(path))
