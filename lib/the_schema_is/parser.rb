@@ -23,7 +23,7 @@ module TheSchemaIs
 
       content = Fast.search('(block (send (const (const nil :ActiveRecord) :Schema) :define) _ $_)', ast).last.first
       Fast.search('(block (send nil :create_table (str $_)) _ _)', content)
-          .each_slice(2).to_h { |t, name| [name, t] }
+          .each_slice(2).to_h { |t, name| [Array(name).first, t] } # FIXME: Why it sometimes makes arrays, and sometimes not?..
     end
 
     def self.model(ast)

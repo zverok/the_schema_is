@@ -1,5 +1,8 @@
-RSpec.describe TheSchemaIs::Cops do
-  subject(:cop) { described_class.new }
+RSpec.describe TheSchemaIs, :config do
+  subject(:cop) { described_class.new(config) }
+
+  let(:cop_config) { real_config.transform_keys(&:to_s) }
+  let(:real_config) { {} }
 
   # TODO: Or just use FakeFS to easier show it the schema?..
   around { |example|
@@ -16,7 +19,7 @@ RSpec.describe TheSchemaIs::Cops do
 
   context 'when schema.rb can not be found'
 
-  describe TheSchemaIs::Cops::Presence do
+  describe TheSchemaIs::Presence do
     specify {
       expect_no_offenses(<<~RUBY)
         class Comment
@@ -44,6 +47,32 @@ RSpec.describe TheSchemaIs::Cops do
       RUBY
     }
 
+    context 'with different schema' do
+      let(:real_config) { {Schema: 'db/schema2.rb'} }
+
+      specify {
+        expect_no_offenses(<<~RUBY)
+          class Dog < ApplicationRecord
+            the_schema_is do
+              t.string "name"
+            end
+          end
+        RUBY
+      }
+
+      specify {
+        expect_offense(<<~RUBY)
+          class Comment < ApplicationRecord
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Table "comments" is not defined in db/schema2.rb
+
+            the_schema_is do
+              t.string "name"
+            end
+          end
+        RUBY
+      }
+    end
+
     it_behaves_like 'autocorrect', <<~SRC_RUBY,
       class Comment < ApplicationRecord
       end
@@ -62,7 +91,7 @@ RSpec.describe TheSchemaIs::Cops do
     DST_RUBY
   end
 
-  describe TheSchemaIs::Cops::MissingColumn do
+  describe TheSchemaIs::MissingColumn do
     specify {
       expect_no_offenses(<<~RUBY)
         class Comment < ApplicationRecord
@@ -165,7 +194,7 @@ RSpec.describe TheSchemaIs::Cops do
     # TODO: Several columns, including subsequent ones!
   end
 
-  describe TheSchemaIs::Cops::UnknownColumn do
+  describe TheSchemaIs::UnknownColumn do
     specify {
       expect_no_offenses(<<~RUBY)
         class Comment < ApplicationRecord
@@ -245,7 +274,7 @@ RSpec.describe TheSchemaIs::Cops do
     DST_RUBY
   end
 
-  describe TheSchemaIs::Cops::WrongColumnDefinition do
+  describe TheSchemaIs::WrongColumnDefinition do
     specify {
       expect_no_offenses(<<~RUBY)
         class Comment < ApplicationRecord

@@ -5,6 +5,7 @@ require 'the_schema_is'
 
 require 'rspec/its'
 require 'saharspec'
+require 'rubocop/rspec/support'
 
 RSpec.configure do |config|
 
