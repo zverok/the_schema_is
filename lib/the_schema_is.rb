@@ -1,6 +1,5 @@
 require 'rubocop'
 require 'fast'
-require 'unparser'
 require 'backports/latest'
 
 module TheSchemaIs

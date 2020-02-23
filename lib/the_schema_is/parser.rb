@@ -31,7 +31,7 @@ module TheSchemaIs
       base = base_classes_query(base_classes)
       ast.ffast("(class $_ #{base})").each_slice(2)
           .map { |node, name|
-            class_name = Unparser.unparse(name.first)
+            class_name = name.first.loc.expression.source
             schema = node.ffast('$(block (send nil :the_schema_is) _ ...')&.last
             # TODO: https://api.rubyonrails.org/classes/ActiveRecord/ModelSchema/ClassMethods.html#method-i-table_name
             # * consider table_prefix/table_suffix settings

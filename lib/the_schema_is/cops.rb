@@ -60,7 +60,7 @@ module TheSchemaIs
       statements = schema.ffast('(block (send nil :create_table) (args) $...)').last.last.arraify
 
       lambda do |corrector|
-        indent = node.loc.expression.begin_pos + 2
+        indent = node.loc.expression.column + 2
         code = [
           'the_schema_is do |t|',
           *statements.map { |s| "  #{s.loc.expression.source}"},
