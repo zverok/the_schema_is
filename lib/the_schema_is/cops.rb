@@ -59,14 +59,15 @@ module TheSchemaIs
 
       def autocorrect(node)
         statements = schema.ffast('(block (send nil :create_table) (args) $...)').last.last.arraify
-        indent = node.loc.expression.begin_pos + 2
-        code = [
-          'the_schema_is do |t|',
-          *statements.map { |s| "  #{s.loc.expression.source}"},
-          'end',
-        ].map { |s| ' ' * indent + s }.join("\n").then { |s| "\n#{s}\n" }
 
         lambda do |corrector|
+          indent = node.loc.expression.begin_pos + 2
+          code = [
+            'the_schema_is do |t|',
+            *statements.map { |s| "  #{s.loc.expression.source}"},
+            'end',
+          ].map { |s| ' ' * indent + s }.join("\n").then { |s| "\n#{s}\n" }
+
           # in "class User < ActiveRecord::Base" -- second child is "ActiveRecord::Base"
           corrector.insert_after(node.children[1].loc.expression, code)
         end
@@ -84,14 +85,42 @@ module TheSchemaIs
 
       MSG = 'Column "%s" definition is missing'
 
+      def autocorrect(node)
+        lambda do |corrector|
+          missing_columns.each { |name, col|
+            prev_statement = model_columns
+              .slice(*schema_columns.keys[0...schema_columns.keys.index(name)])
+              .values.last&.source
+            if prev_statement
+              indent = prev_statement.loc.expression.column
+              corrector.insert_after(
+                prev_statement.loc.expression,
+                "\n#{' ' * indent}#{col.source.loc.expression.source}"
+              )
+            else
+              indent = model.schema.loc.expression.column + 2
+              corrector.insert_after(
+                # of "the_schema_is do |t|" -- children[1] is "|t|""
+                model.schema.children[1].loc.expression,
+                "\n#{' ' * indent}#{col.source.loc.expression.source}"
+              )
+            end
+          }
+        end
+      end
+
       private
 
       def validate
         return if model.schema.nil?
 
-        schema_columns.reject { |name, | model_columns.keys.include?(name) }.each do |_, col|
+        missing_columns.each do |_, col|
           add_offense(model.schema, message: MSG % col.name)
         end
+      end
+
+      def missing_columns
+        schema_columns.reject { |name, | model_columns.keys.include?(name) }
       end
     end
 
@@ -100,14 +129,25 @@ module TheSchemaIs
 
       MSG = 'Uknown column "%s"'
 
+      def autocorrect(node)
+        lambda do |corrector|
+          # FIXME: doesn't removes extra empty lines yet
+          extra_columns.each { |_, col| corrector.remove(col.source.loc.expression) }
+        end
+      end
+
       private
 
       def validate
         return if model.schema.nil?
 
-        model_columns.reject { |name, | schema_columns.keys.include?(name) }.each do |_, col|
+        extra_columns.each do |_, col|
           add_offense(col.source, message: MSG % col.name)
         end
+      end
+
+      def extra_columns
+        model_columns.reject { |name, | schema_columns.keys.include?(name) }
       end
     end
 
@@ -116,17 +156,31 @@ module TheSchemaIs
 
       MSG = 'Wrong column type for "%s": expected %s'
 
+      def autocorrect(node)
+        lambda do |corrector|
+          wrong_type_columns.each do |mcol, scol|
+            # FIXME: It is easier to just replace the whole definition, though it conflicts
+            # with idea of separated type/definition cops. Maybe it is a wrong idea, after all :)
+            corrector.replace(mcol.source.loc.expression, scol.source.loc.expression.source)
+          end
+        end
+      end
+
       private
 
       def validate
         return if model.schema.nil?
 
-        model_columns
-          .map { |name, col| [col, schema_columns[name]] }
-          .reject { |mcol, scol| mcol.type == scol.type }
+        wrong_type_columns
           .each do |mcol, scol|
             add_offense(mcol.source, message: MSG % [mcol.name, scol.type])
           end
+      end
+
+      def wrong_type_columns
+        model_columns
+          .map { |name, col| [col, schema_columns[name]] }
+          .reject { |mcol, scol| mcol.type == scol.type }
       end
     end
 

@@ -9,6 +9,11 @@ RSpec.describe TheSchemaIs::Cops do
   # FIXME: Better to pass it to cop as config "where is schema.rb"?..
   let(:target_dir) { File.expand_path('../fixtures/base', __dir__) }
 
+  shared_examples 'autocorrect' do |from, to|
+    subject { autocorrect_source(from).gsub(/\n\s+\n/m, "\n\n") }
+    it { is_expected.to eq to }
+  end
+
   context 'when schema.rb can not be found'
 
   describe TheSchemaIs::Cops::Presence do
@@ -27,25 +32,22 @@ RSpec.describe TheSchemaIs::Cops do
       RUBY
     }
 
-    describe '#autocorrect' do
-      subject { method(:autocorrect_source) }
-
-      its_call(<<~SRC_RUBY) { is_expected.to ret <<~DST_RUBY }
-        class Comment < ApplicationRecord
+    it_behaves_like 'autocorrect', <<~SRC_RUBY,
+      class Comment < ApplicationRecord
+      end
+    SRC_RUBY
+    <<~DST_RUBY
+      class Comment < ApplicationRecord
+        the_schema_is do |t|
+          t.text     "body"
+          t.integer  "user_id"
+          t.integer  "article_id"
+          t.datetime "created_at", null: false
+          t.datetime "updated_at", null: false
         end
-      SRC_RUBY
-        class Comment < ApplicationRecord
-          the_schema_is do |t|
-            t.text     "body"
-            t.integer  "user_id"
-            t.integer  "article_id"
-            t.datetime "created_at", null: false
-            t.datetime "updated_at", null: false
-          end
 
-        end
-      DST_RUBY
-    end
+      end
+    DST_RUBY
   end
 
   describe TheSchemaIs::Cops::MissingColumn do
@@ -76,6 +78,53 @@ RSpec.describe TheSchemaIs::Cops do
         end
       RUBY
     }
+
+    it_behaves_like 'autocorrect', <<~SRC_RUBY,
+      class Comment < ApplicationRecord
+        the_schema_is do |t|
+          t.text     "body"
+          t.integer  "user_id"
+          t.datetime "created_at", null: false
+          t.datetime "updated_at", null: false
+        end
+      end
+    SRC_RUBY
+    <<~DST_RUBY
+      class Comment < ApplicationRecord
+        the_schema_is do |t|
+          t.text     "body"
+          t.integer  "user_id"
+          t.integer  "article_id"
+          t.datetime "created_at", null: false
+          t.datetime "updated_at", null: false
+        end
+      end
+    DST_RUBY
+
+    # First column
+    it_behaves_like 'autocorrect', <<~SRC_RUBY,
+      class Comment < ApplicationRecord
+        the_schema_is do |t|
+          t.integer  "user_id"
+          t.integer  "article_id"
+          t.datetime "created_at", null: false
+          t.datetime "updated_at", null: false
+        end
+      end
+    SRC_RUBY
+    <<~DST_RUBY
+      class Comment < ApplicationRecord
+        the_schema_is do |t|
+          t.text     "body"
+          t.integer  "user_id"
+          t.integer  "article_id"
+          t.datetime "created_at", null: false
+          t.datetime "updated_at", null: false
+        end
+      end
+    DST_RUBY
+
+    # TODO: Several columns, including subsequent ones!
   end
 
   describe TheSchemaIs::Cops::UnknownColumn do
@@ -108,6 +157,32 @@ RSpec.describe TheSchemaIs::Cops do
         end
       RUBY
     }
+
+    # TODO: Empty lines are left, for now
+    it_behaves_like 'autocorrect', <<~SRC_RUBY,
+        class Comment < ApplicationRecord
+          the_schema_is do |t|
+            t.text     "body"
+            t.integer  "user_id"
+            t.integer  "article_id"
+            t.integer  "owner_id"
+            t.datetime "created_at", null: false
+            t.datetime "updated_at", null: false
+          end
+        end
+    SRC_RUBY
+    <<~DST_RUBY
+      class Comment < ApplicationRecord
+        the_schema_is do |t|
+          t.text     "body"
+          t.integer  "user_id"
+          t.integer  "article_id"
+
+          t.datetime "created_at", null: false
+          t.datetime "updated_at", null: false
+        end
+      end
+    DST_RUBY
   end
 
   describe TheSchemaIs::Cops::WrongColumnType do
@@ -139,6 +214,29 @@ RSpec.describe TheSchemaIs::Cops do
         end
       RUBY
     }
+
+    it_behaves_like 'autocorrect', <<~SRC_RUBY,
+        class Comment < ApplicationRecord
+          the_schema_is do |t|
+            t.text     "body"
+            t.integer  "user_id"
+            t.string   "article_id"
+            t.datetime "created_at", null: false
+            t.datetime "updated_at", null: false
+          end
+        end
+    SRC_RUBY
+    <<~DST_RUBY
+      class Comment < ApplicationRecord
+        the_schema_is do |t|
+          t.text     "body"
+          t.integer  "user_id"
+          t.integer  "article_id"
+          t.datetime "created_at", null: false
+          t.datetime "updated_at", null: false
+        end
+      end
+    DST_RUBY
   end
 end
 
