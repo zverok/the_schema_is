@@ -27,29 +27,31 @@ module TheSchemaIs
           .each_slice(2).to_h { |t, name| [Array(name).first, t] } # FIXME: Why it sometimes makes arrays, and sometimes not?..
     end
 
-    def self.model(ast, base_classes = %w[ActiveRecord::Base ApplicationRecord])
+    def self.model(ast, base_classes: %w[ActiveRecord::Base ApplicationRecord], table_prefix: nil)
       base = base_classes_query(base_classes)
       ast.ffast("(class $_ #{base})").each_slice(2)
           .map { |node, name|
+            next if node.ffast('(send self abstract_class= true)').any?
             class_name = name.first.loc.expression.source
             schema = node.ffast('$(block (send nil :the_schema_is) _ ...')&.last
             # TODO: https://api.rubyonrails.org/classes/ActiveRecord/ModelSchema/ClassMethods.html#method-i-table_name
             # * consider table_prefix/table_suffix settings
             # * also, consider engines!
-            table_name = node.ffast('(send self $_ (str $_)').each_slice(3)
-              .find { |_, meth, | meth == :table_name= } # FIXME: should be possible with Fast statement?..
-              &.last
+
+            table_name = node.ffast('(send self table_name= (str $_)')&.last
+
             Model.new(
               class_name: class_name,
               # TODO:
               # * search for self.table_name = ...
               # * check with namespaces and other stuff
               # * then, allow to configure in other ways
-              table_name: table_name || ActiveSupport::Inflector.tableize(class_name),
+              table_name: table_name || (table_prefix.to_s + ActiveSupport::Inflector.tableize(class_name)),
               source: node,
               schema: schema
             )
           }
+          .compact
           .first
     end
 

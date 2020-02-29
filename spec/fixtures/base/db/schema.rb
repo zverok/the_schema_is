@@ -76,7 +76,7 @@ ActiveRecord::Schema.define(version: 20160712061614) do
   add_index "taggings", ["tag_id", "taggable_id", "taggable_type", "context", "tagger_id", "tagger_type"], name: "taggings_idx", unique: true
   add_index "taggings", ["taggable_id", "taggable_type", "context"], name: "index_taggings_on_taggable_id_and_taggable_type_and_context"
 
-  create_table "tags", force: :cascade do |t|
+  create_table "prefixed_tags", force: :cascade do |t|
     t.string  "name"
     t.integer "taggings_count", default: 0
   end

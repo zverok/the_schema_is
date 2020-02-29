@@ -92,6 +92,28 @@ RSpec.describe TheSchemaIs, :config do
       }
     end
 
+    context 'with table prefix' do
+      let(:real_config) { {TablePrefix: 'prefixed_'} }
+
+      specify {
+        expect_no_offenses(<<~RUBY)
+          class Tag < ApplicationRecord
+            the_schema_is do
+              t.string "text"
+            end
+          end
+        RUBY
+      }
+
+      specify {
+        expect_offense(<<~RUBY)
+          class Comment < ApplicationRecord
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Table "prefixed_comments" is not defined in db/schema.rb
+          end
+        RUBY
+      }
+    end
+
     it_behaves_like 'autocorrect', <<~SRC_RUBY,
       class Comment < ApplicationRecord
       end

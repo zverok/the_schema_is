@@ -11,10 +11,11 @@ RSpec.describe TheSchemaIs::Parser do
     end
 
     it_behaves_like 'model extractor',
-      <<~RUBY, nil
+      <<~RUBY,
       class User
       end
       RUBY
+      nil
 
     it_behaves_like 'model extractor',
       <<~RUBY,
@@ -50,6 +51,14 @@ RSpec.describe TheSchemaIs::Parser do
       end
       RUBY
       {class_name: 'User', table_name: 'users', schema: Astrolabe::Node}
+
+    it_behaves_like 'model extractor',
+      <<~RUBY,
+      class User < ActiveRecord::Base
+        self.abstract_class = true
+      end
+      RUBY
+      nil
   end
 
   describe '.schema' do
