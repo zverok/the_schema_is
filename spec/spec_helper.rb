@@ -1,14 +1,16 @@
+# frozen_string_literal: true
+
 require 'rubocop'
 
 require 'rubocop/rspec/support'
 require 'the_schema_is'
+require 'the_schema_is/cops'
 
 require 'rspec/its'
 require 'saharspec'
 require 'rubocop/rspec/support'
 
 RSpec.configure do |config|
-
   config.order = :random
 
   # Forbid RSpec from monkey patching any of our objects

@@ -1,15 +1,33 @@
+# frozen_string_literal: true
+
 require 'memoist'
+require 'rubocop'
+require 'fast'
+require 'backports/latest'
+
+require_relative 'cops/node_util'
+require_relative 'cops/inject'
+
+TheSchemaIs::Cops::Inject.defaults!
+
+require_relative 'cops/parser'
 
 module TheSchemaIs
-  using NodeRefinements
+  using Cops::NodeRefinements
 
   module Common
     extend Memoist
 
+    def self.included(cls)
+      cls.define_singleton_method(:badge) {
+        RuboCop::Cop::Badge.for("TheSchemaIs::#{name.split('::').last}")
+      }
+    end
+
     def on_class(node)
-      @model = Parser.model(node,
-        base_classes: cop_config.fetch('BaseClass'),
-        table_prefix: cop_config['TablePrefix']) or return
+      @model = Cops::Parser.model(node,
+                                  base_classes: cop_config.fetch('BaseClass'),
+                                  table_prefix: cop_config['TablePrefix']) or return
 
       validate
     end
@@ -27,25 +45,19 @@ module TheSchemaIs
     end
 
     memoize def schema
-      Parser.schema(schema_path)[model.table_name]
+      Cops::Parser.schema(schema_path)[model.table_name]
     end
 
     memoize def model_columns
       statements = model.schema.ffast('(block (send nil :the_schema_is) (args) $...)').last.last
 
-      Parser.columns(statements).to_h { |col| [col.name, col] }
+      Cops::Parser.columns(statements).to_h { |col| [col.name, col] }
     end
 
     memoize def schema_columns
       statements = schema.ffast('(block (send nil :create_table) (args) $...)').last.last
 
-      Parser.columns(statements).to_h { |col| [col.name, col] }
-    end
-
-    def self.included(cls)
-      cls.define_singleton_method(:badge) {
-        RuboCop::Cop::Badge.for("TheSchemaIs::#{name.split('::').last}")
-      }
+      Cops::Parser.columns(statements).to_h { |col| [col.name, col] }
     end
   end
 
@@ -64,8 +76,8 @@ module TheSchemaIs
         indent = node.loc.expression.column + 2
         code = [
           'the_schema_is do |t|',
-          *statements.map { |s| "  #{s.loc.expression.source}"},
-          'end',
+          *statements.map { |s| "  #{s.loc.expression.source}" },
+          'end'
         ].map { |s| ' ' * indent + s }.join("\n").then { |s| "\n#{s}\n" }
 
         # in "class User < ActiveRecord::Base" -- second child is "ActiveRecord::Base"
@@ -87,12 +99,12 @@ module TheSchemaIs
 
     MSG = 'Column "%s" definition is missing'
 
-    def autocorrect(node)
+    def autocorrect(_node)
       lambda do |corrector|
         missing_columns.each { |name, col|
           prev_statement = model_columns
-            .slice(*schema_columns.keys[0...schema_columns.keys.index(name)])
-            .values.last&.source
+                           .slice(*schema_columns.keys[0...schema_columns.keys.index(name)])
+                           .values.last&.source
           if prev_statement
             indent = prev_statement.loc.expression.column
             corrector.insert_after(
@@ -122,7 +134,7 @@ module TheSchemaIs
     end
 
     def missing_columns
-      schema_columns.reject { |name, | model_columns.keys.include?(name) }
+      schema_columns.reject { |name,| model_columns.keys.include?(name) }
     end
   end
 
@@ -131,7 +143,7 @@ module TheSchemaIs
 
     MSG = 'Uknown column "%s"'
 
-    def autocorrect(node)
+    def autocorrect(_node)
       lambda do |corrector|
         extra_columns.each do |_, col|
           src_range = col.source.loc.expression
@@ -156,7 +168,7 @@ module TheSchemaIs
     end
 
     def extra_columns
-      model_columns.reject { |name, | schema_columns.keys.include?(name) }
+      model_columns.reject { |name,| schema_columns.keys.include?(name) }
     end
   end
 
@@ -165,7 +177,7 @@ module TheSchemaIs
 
     MSG = 'Wrong column definition: expected `%s`'
 
-    def autocorrect(node)
+    def autocorrect(_node)
       lambda do |corrector|
         wrong_columns.each do |mcol, scol|
           corrector.replace(mcol.source.loc.expression, scol.source.loc.expression.source)
@@ -187,7 +199,9 @@ module TheSchemaIs
     def wrong_columns
       model_columns
         .map { |name, col| [col, schema_columns[name]] }
-        .reject { |mcol, scol| mcol.type == scol.type && mcol.definition_source == scol.definition_source }
+        .reject { |mcol, scol|
+          mcol.type == scol.type && mcol.definition_source == scol.definition_source
+        }
     end
   end
 end

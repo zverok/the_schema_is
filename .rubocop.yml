@@ -1,0 +1,52 @@
+require: rubocop-rspec
+
+AllCops:
+  Include:
+    - 'lib/**/*.rb'
+    - 'spec/**/*.rb'
+  Exclude:
+    - 'spec/fixtures/**/*.rb'
+  DisplayCopNames: true
+  TargetRubyVersion: 2.4
+
+Layout/LineLength:
+  Max: 100
+  IgnoredPatterns: ['\#.*'] # ignore long comments
+
+Style/AndOr:
+  EnforcedStyle: conditionals
+
+Style/SignalException:
+  EnforcedStyle: semantic
+
+Style/CommentAnnotation:
+  Enabled: false
+
+Style/BlockDelimiters:
+  EnforcedStyle: semantic
+
+Style/HashEachMethods:
+  Enabled: true
+
+Style/HashTransformKeys:
+  Enabled: true
+
+Style/HashTransformValues:
+  Enabled: true
+
+Layout/SpaceInsideHashLiteralBraces:
+  EnforcedStyle: no_space
+
+# Auto-correcting is hard job!
+Metrics/AbcSize:
+  Enabled: false
+
+Metrics/MethodLength:
+  Max: 20
+
+Style/Documentation:
+  Enabled: false
+
+Style/FormatString:
+  EnforcedStyle: percent
+

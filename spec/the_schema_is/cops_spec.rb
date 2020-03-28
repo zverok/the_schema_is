@@ -1,19 +1,22 @@
+# frozen_string_literal: true
+
 RSpec.describe TheSchemaIs, :config do
   subject(:cop) { described_class.new(config) }
 
   let(:cop_config) { real_config.transform_keys(&:to_s) }
   let(:real_config) { {} }
 
+  # FIXME: Better to pass it to cop as config "where is schema.rb"?..
+  let(:target_dir) { File.expand_path('../fixtures/base', __dir__) }
+
   # TODO: Or just use FakeFS to easier show it the schema?..
   around { |example|
     Dir.chdir(target_dir) { example.run }
   }
 
-  # FIXME: Better to pass it to cop as config "where is schema.rb"?..
-  let(:target_dir) { File.expand_path('../fixtures/base', __dir__) }
-
   shared_examples 'autocorrect' do |from, to|
     subject { autocorrect_source(from) }
+
     it { is_expected.to eq to }
   end
 

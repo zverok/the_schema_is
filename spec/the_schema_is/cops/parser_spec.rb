@@ -1,4 +1,6 @@
-RSpec.describe TheSchemaIs::Parser do
+# frozen_string_literal: true
+
+RSpec.describe TheSchemaIs::Cops::Parser do
   describe '.model' do
     shared_examples 'model extractor' do |code, attrs|
       subject { described_class.model(Fast.ast(code)) }

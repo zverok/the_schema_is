@@ -17,6 +17,7 @@ Gem::Specification.new do |s|
 
   s.add_runtime_dependency 'backports', '>= 3.16.0'
   s.add_runtime_dependency 'rubocop'
+  s.add_runtime_dependency 'rubocop-rspec'
   s.add_runtime_dependency 'activesupport'
   s.add_runtime_dependency 'ffast', '>= 0.1.8'
   s.add_runtime_dependency 'memoist'
