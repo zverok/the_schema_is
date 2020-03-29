@@ -49,6 +49,11 @@ module TheSchemaIs
       def self.node2model(name_node, definition_node, table_prefix)
         return if definition_node.ffast('(send self abstract_class= true)').any?
 
+        # If all children are classes/modules -- model is here only as a namespace, shouldn't be
+        # parsed/have the_schema_is
+        return if definition_node
+                  .children[2]&.arraify&.all? { |n| %i[class module].include?(n.type) }
+
         class_name = name_node.first.loc.expression.source
 
         schema = definition_node.ffast('$(block (send nil :the_schema_is) _ ...')&.last

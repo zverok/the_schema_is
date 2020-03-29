@@ -77,10 +77,12 @@ module TheSchemaIs
     def autocorrect(node)
       return unless schema
 
+      m = model
+
       lambda do |corrector|
         indent = node.loc.expression.column + 2
         code = [
-          "the_schema_is(:#{model.table_name}) do |t|",
+          "the_schema_is(:#{m.table_name}) do |t|",
           *schema_columns.map { |_, col| "  #{col.source.loc.expression.source}" },
           'end'
         ].map { |s| ' ' * indent + s }.join("\n").then { |s| "\n#{s}\n" }

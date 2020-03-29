@@ -50,6 +50,16 @@ RSpec.describe TheSchemaIs, :config do
       RUBY
     }
 
+    # Model used only for namespacing, shouldn't have schema described!
+    specify {
+      expect_no_offenses(<<~RUBY)
+        class Comment < ApplicationRecord
+          class Nested
+          end
+        end
+      RUBY
+    }
+
     context 'with different schema' do
       let(:real_config) { {Schema: 'db/schema2.rb'} }
 
@@ -131,6 +141,16 @@ RSpec.describe TheSchemaIs, :config do
           t.datetime "updated_at", null: false
         end
 
+      end
+    DST_RUBY
+
+    # Can't correct what's not in a schema
+    it_behaves_like 'autocorrect', <<~SRC_RUBY,
+      class Dog < ApplicationRecord
+      end
+    SRC_RUBY
+    <<~DST_RUBY
+      class Dog < ApplicationRecord
       end
     DST_RUBY
   end

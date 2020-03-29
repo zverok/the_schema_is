@@ -29,6 +29,15 @@ RSpec.describe TheSchemaIs::Cops::Parser do
     it_behaves_like 'model extractor',
       <<~RUBY,
       class User < ActiveRecord::Base
+        class NestedOnly
+        end
+      end
+      RUBY
+      nil
+
+    it_behaves_like 'model extractor',
+      <<~RUBY,
+      class User < ActiveRecord::Base
         self.table_name = 'authors'
       end
       RUBY
