@@ -9,12 +9,16 @@ module TheSchemaIs
 
       # See https://github.com/rails/rails/blob/f33d52c95217212cbacc8d5e44b5a8e3cdc6f5b3/activerecord/lib/active_record/connection_adapters/abstract/schema_definitions.rb#L217
       # TODO: numeric is just an alias for decimal
-      # TODO: different adapters can add another types (jsonb for Postgres)
-      COLUMN_TYPES = %i[bigint binary boolean date datetime decimal numeric
-                        float integer json string text time timestamp virtual] +
-                     %i[jsonb] # Postgres
+      # TODO: different adapters can add another types
+      # https://edgeguides.rubyonrails.org/active_record_postgresql.html
+      STANDARD_COLUMN_TYPES = %i[bigint binary boolean date datetime decimal numeric
+                                 float integer json string text time timestamp virtual].freeze
+      POSTGRES_COLUMN_TYPES = %i[jsonb inet cidr macaddr hstore uuid].freeze
+
+      COLUMN_DEFS = (STANDARD_COLUMN_TYPES + POSTGRES_COLUMN_TYPES + %i[column]).freeze
 
       Model = Struct.new(:class_name, :table_name, :source, :schema, keyword_init: true)
+
       Column = Struct.new(:name, :type, :definition, :source, keyword_init: true) do
         def definition_source
           return unless definition
@@ -37,31 +41,30 @@ module TheSchemaIs
       def self.model(ast, base_classes: %w[ActiveRecord::Base ApplicationRecord], table_prefix: nil)
         base = base_classes_query(base_classes)
         ast.ffast("(class $_ #{base})").each_slice(2)
-           .map { |node, name|
-          next if node.ffast('(send self abstract_class= true)').any?
-
-          class_name = name.first.loc.expression.source
-          schema = node.ffast('$(block (send nil :the_schema_is) _ ...')&.last
-          # TODO: https://api.rubyonrails.org/classes/ActiveRecord/ModelSchema/ClassMethods.html#method-i-table_name
-          # * consider table_prefix/table_suffix settings
-          # * also, consider engines!
-
-          table_name = node.ffast('(send self table_name= (str $_)')&.last
-
-          Model.new(
-            class_name: class_name,
-            # TODO:
-            # * search for self.table_name = ...
-            # * check with namespaces and other stuff
-            # * then, allow to configure in other ways
-            table_name: table_name ||
-              table_prefix.to_s.+(ActiveSupport::Inflector.tableize(class_name)),
-            source: node,
-            schema: schema
-          )
-        }
+           .map { |node, name| node2model(name, node, table_prefix.to_s) }
            .compact
            .first
+      end
+
+      def self.node2model(name_node, definition_node, table_prefix)
+        return if definition_node.ffast('(send self abstract_class= true)').any?
+
+        class_name = name_node.first.loc.expression.source
+
+        schema = definition_node.ffast('$(block (send nil :the_schema_is) _ ...')&.last
+
+        # TODO: https://api.rubyonrails.org/classes/ActiveRecord/ModelSchema/ClassMethods.html#method-i-table_name
+        # * consider table_prefix/table_suffix settings
+        # * also, consider engines!
+        table_name = definition_node.ffast('(send self table_name= (str $_)')&.last
+
+        Model.new(
+          class_name: class_name,
+          table_name: table_name ||
+            table_prefix.+(ActiveSupport::Inflector.tableize(class_name)),
+          source: definition_node,
+          schema: schema
+        )
       end
 
       def self.base_classes_query(classes)
@@ -73,14 +76,13 @@ module TheSchemaIs
 
       def self.columns(ast)
         ast.arraify.map { |node|
-          # TODO: old t.column :name, :type also should be supported!
           # FIXME: Of course it should be easier to say "optional additional params"
           if (type, name, defs =
                 node.ffast_match?('(send {(send nil t) (lvar t)} $_ (str $_) $...'))
             Column.new(name: name, type: type, definition: defs, source: node) \
-              if COLUMN_TYPES.include?(type)
+              if COLUMN_DEFS.include?(type)
           elsif (type, name = Fast.match?('(send {(send nil t) (lvar t)} $_ (str $_)', node))
-            Column.new(name: name, type: type, source: node) if COLUMN_TYPES.include?(type)
+            Column.new(name: name, type: type, source: node) if COLUMN_DEFS.include?(type)
           end
         }.compact
       end

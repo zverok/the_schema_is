@@ -129,3 +129,5 @@ Cop checks (TBD):
 * It doesn't check the actual DB?
 * What if I don't use Rubocop?
 * How can I annotate my fabrics, model specs, routes, controllers, ... (which `annotate` allows)?
+* Rubocop is unhappy and ...
+  Metrics/BlockLength:

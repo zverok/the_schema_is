@@ -15,6 +15,12 @@ require_relative 'cops/parser'
 module TheSchemaIs
   using Cops::NodeRefinements
 
+  module Cops
+    def self.schema_cache
+      @schema_cache ||= Hash.new { |h, path| h[path] = Cops::Parser.schema(path) }
+    end
+  end
+
   module Common
     extend Memoist
 
@@ -45,7 +51,7 @@ module TheSchemaIs
     end
 
     memoize def schema
-      Cops::Parser.schema(schema_path)[model.table_name]
+      Cops.schema_cache.dig(schema_path, model.table_name)
     end
 
     memoize def model_columns
@@ -55,6 +61,7 @@ module TheSchemaIs
     end
 
     memoize def schema_columns
+      # FIXME: should be already done in Parser.schema, probably!
       statements = schema.ffast('(block (send nil :create_table) (args) $...)').last.last
 
       Cops::Parser.columns(statements).to_h { |col| [col.name, col] }
@@ -70,13 +77,11 @@ module TheSchemaIs
     def autocorrect(node)
       return unless schema
 
-      statements = schema.ffast('(block (send nil :create_table) (args) $...)').last.last.arraify
-
       lambda do |corrector|
         indent = node.loc.expression.column + 2
         code = [
           'the_schema_is do |t|',
-          *statements.map { |s| "  #{s.loc.expression.source}" },
+          *schema_columns.map { |_, col| "  #{col.source.loc.expression.source}" },
           'end'
         ].map { |s| ' ' * indent + s }.join("\n").then { |s| "\n#{s}\n" }
 
