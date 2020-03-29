@@ -71,7 +71,7 @@ module TheSchemaIs
   class Presence < RuboCop::Cop::Cop
     include Common
 
-    MSG_NO_MODEL_SCHEMA = 'The schema is not defined for the model'
+    MSG_NO_MODEL_SCHEMA = 'The schema is not specified in the model (use the_schema_is statement)'
     MSG_NO_DB_SCHEMA = 'Table "%s" is not defined in %s'
 
     def autocorrect(node)
@@ -80,7 +80,7 @@ module TheSchemaIs
       lambda do |corrector|
         indent = node.loc.expression.column + 2
         code = [
-          'the_schema_is do |t|',
+          "the_schema_is(:#{model.table_name}) do |t|",
           *schema_columns.map { |_, col| "  #{col.source.loc.expression.source}" },
           'end'
         ].map { |s| ' ' * indent + s }.join("\n").then { |s| "\n#{s}\n" }

@@ -33,7 +33,7 @@ RSpec.describe TheSchemaIs, :config do
     specify {
       expect_offense(<<~RUBY)
         class Comment < ApplicationRecord
-        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ The schema is not defined for the model
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ The schema is not specified in the model (use the_schema_is statement)
         end
       RUBY
     }
@@ -89,7 +89,7 @@ RSpec.describe TheSchemaIs, :config do
       specify {
         expect_offense(<<~RUBY)
           class Comment < Base
-          ^^^^^^^^^^^^^^^^^^^^ The schema is not defined for the model
+          ^^^^^^^^^^^^^^^^^^^^ The schema is not specified in the model (use the_schema_is statement)
           end
         RUBY
       }
@@ -123,7 +123,7 @@ RSpec.describe TheSchemaIs, :config do
     SRC_RUBY
     <<~DST_RUBY
       class Comment < ApplicationRecord
-        the_schema_is do |t|
+        the_schema_is(:comments) do |t|
           t.text     "body"
           t.integer  "user_id"
           t.integer  "article_id"
