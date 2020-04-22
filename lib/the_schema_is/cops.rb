@@ -82,7 +82,7 @@ module TheSchemaIs
       lambda do |corrector|
         indent = node.loc.expression.column + 2
         code = [
-          "the_schema_is(:#{m.table_name}) do |t|",
+          "the_schema_is #{m.table_name.to_s.inspect} do |t|",
           *schema_columns.map { |_, col| "  #{col.source.loc.expression.source}" },
           'end'
         ].map { |s| ' ' * indent + s }.join("\n").then { |s| "\n#{s}\n" }

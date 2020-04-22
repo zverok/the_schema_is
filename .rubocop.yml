@@ -6,8 +6,11 @@ AllCops:
     - 'spec/**/*.rb'
   Exclude:
     - 'spec/fixtures/**/*.rb'
+    - 'spec/spec_helper.rb'
   DisplayCopNames: true
   TargetRubyVersion: 2.4
+
+# That's my style
 
 Layout/LineLength:
   Max: 100
@@ -16,14 +19,31 @@ Layout/LineLength:
 Style/AndOr:
   EnforcedStyle: conditionals
 
+Style/FormatString:
+  EnforcedStyle: percent
+
 Style/SignalException:
   EnforcedStyle: semantic
 
-Style/CommentAnnotation:
-  Enabled: false
-
 Style/BlockDelimiters:
   EnforcedStyle: semantic
+
+Layout/SpaceInsideHashLiteralBraces:
+  EnforcedStyle: no_space
+
+# Auto-correcting is hard job!
+
+Metrics/AbcSize:
+  Enabled: false
+
+Metrics/MethodLength:
+  Max: 20
+
+# On it. Honestly
+Style/Documentation:
+  Enabled: false
+
+# New cops that should always be explicitly turned on or off
 
 Style/HashEachMethods:
   Enabled: true
@@ -34,19 +54,19 @@ Style/HashTransformKeys:
 Style/HashTransformValues:
   Enabled: true
 
-Layout/SpaceInsideHashLiteralBraces:
-  EnforcedStyle: no_space
+Layout/SpaceAroundMethodCallOperator:
+  Enabled: true
 
-# Auto-correcting is hard job!
-Metrics/AbcSize:
+Lint/RaiseException:
+  Enabled: true
+
+Lint/StructNewOverride:
+  Enabled: true
+
+Style/ExponentialNotation:
+  Enabled: true
+
+# Those are meaningless/buggy
+
+Style/CommentAnnotation:
   Enabled: false
-
-Metrics/MethodLength:
-  Max: 20
-
-Style/Documentation:
-  Enabled: false
-
-Style/FormatString:
-  EnforcedStyle: percent
-

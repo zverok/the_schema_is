@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-RSpec.describe TheSchemaIs, :config do
+RSpec.describe TheSchemaIs, :config_ns do
   subject(:cop) { described_class.new(config) }
 
   let(:cop_config) { real_config.transform_keys(&:to_s) }
@@ -9,7 +9,7 @@ RSpec.describe TheSchemaIs, :config do
   # FIXME: Better to pass it to cop as config "where is schema.rb"?..
   let(:target_dir) { File.expand_path('../fixtures/base', __dir__) }
 
-  # TODO: Or just use FakeFS to easier show it the schema?..
+  # FIXME: Or just use FakeFS to easier show it the schema?..
   around { |example|
     Dir.chdir(target_dir) { example.run }
   }
@@ -133,7 +133,7 @@ RSpec.describe TheSchemaIs, :config do
     SRC_RUBY
     <<~DST_RUBY
       class Comment < ApplicationRecord
-        the_schema_is(:comments) do |t|
+        the_schema_is "comments" do |t|
           t.text     "body"
           t.integer  "user_id"
           t.integer  "article_id"

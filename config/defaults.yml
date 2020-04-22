@@ -1,24 +1,24 @@
 ---
-TheSchemaIs/Presence:
-  Enabled: true
-  Description: "Check presence of the_schema_is statement in ActiveRecord models"
+# For all TheSchemaIs cops the settings are the same.
+# But note that Rubocop's behavior is slightly weird with --show-cops (it will not show that
+# cop has those three setting)
+TheSchemaIs:
   Schema: db/schema.rb
   BaseClass: ['ActiveRecord::Base', 'ApplicationRecord']
+  TablePrefix: ''
+
+TheSchemaIs/Presence:
+   Description: "Check presence of the_schema_is statement in ActiveRecord models"
+   Enabled: true
 
 TheSchemaIs/MissingColumn:
-  Enabled: true
   Description: "Check columns missing in the_schema_is definition (but present in schema.rb)"
-  Schema: db/schema.rb
-  BaseClass: ['ActiveRecord::Base', 'ApplicationRecord']
+  Enabled: true
 
 TheSchemaIs/UnknownColumn:
-  Enabled: true
   Description: "Check unknown column in the_schema_is definition (not defined in schema.rb)"
-  Schema: db/schema.rb
-  BaseClass: ['ActiveRecord::Base', 'ApplicationRecord']
+  Enabled: true
 
 TheSchemaIs/WrongColumnDefinition:
-  Enabled: true
   Description: "Check column definition in the_schema_is statement against schema.rb"
-  Schema: db/schema.rb
-  BaseClass: ['ActiveRecord::Base', 'ApplicationRecord']
+  Enabled: true
