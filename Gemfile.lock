@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    the_schema_is (0.0.1)
+    the_schema_is (0.0.2)
       activesupport
       backports (>= 3.16.0)
       ffast (>= 0.1.8)
