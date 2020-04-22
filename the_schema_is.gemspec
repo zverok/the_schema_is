@@ -14,7 +14,7 @@ Gem::Specification.new do |s|
 
   s.required_ruby_version = '>= 2.6.0'
 
-  s.files = `git ls-files lib LICENSE.txt *.md`.split($RS)
+  s.files = `git ls-files lib config LICENSE.txt *.md`.split($RS)
   s.require_paths = ["lib"]
 
   s.add_runtime_dependency 'backports', '>= 3.16.0'
