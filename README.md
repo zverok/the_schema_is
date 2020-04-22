@@ -1,12 +1,12 @@
 # The schema is ...
 
-## What is it
-
 `the-schema-is` is a model schema annotation DSL in ActiveSupport.
 
 ### Why annotate?
 
-**What attributes objects of this class have** (which are the columns in ActiveRecord model) is part of class' public interface. It _should_ be part of what I can _read immediately_ when working with the class. "It is drawn automatically from DB" is kinda clever, but it _does not_ helps to read the code. "Auto-deduction from DB" could be used to compare actual table content's to definition in Ruby, but **not** to skip the definition.
+An important part of class' public interface is **what attributes objects of this class have**. In ActiveRecord, attributes are inferred from DB columns, and only can be seen in `db/schema.rb`, which is unfortunate.
+
+We believe it _should_ be part _immediately available_ information of class definition. "It is drawn automatically from DB" is kinda clever, but it _does not_ helps to read the code. "Auto-deduction from DB" could be used to compare actual table content's to definition in Ruby, but **not** to skip the definition.
 
 > Fun fact: most of other languages' ORM have chosen "explictly list attributes in the model" approach, for some reason! For example, Python's [Django](https://docs.djangoproject.com/en/3.0/topics/db/models/#quick-example), Elixir's [Ecto](https://hexdocs.pm/phoenix/ecto.html#the-schema), Go's [Beego](https://beego.me/docs/mvc/model/overview.md#quickstart) and [Gorm](https://gorm.io/docs/#Quick-Start), Rust's [Diesel](https://github.com/diesel-rs/diesel/blob/v1.3.0/examples/postgres/getting_started_step_1/src/models.rs), most of popular [NodeJS's options](https://www.codediesel.com/javascript/nodejs-mysql-orms/), and PHP's [Symphony](https://symfony.com/doc/current/doctrine.html#creating-an-entity-class) (but, to be honest, not [Laravel](https://laravel.com/docs/6.x/eloquent#eloquent-model-conventions)).
 
@@ -44,7 +44,7 @@ It kinda achieves the goal, but in our experience, it also brings some problems:
 class User < ApplicationRecord
   the_schema_is "users" do |t|
     t.string "email", default: "", null: false
-    t.string "encrypted_password", default: "", null: false
+    t.string "encrypted_password", null: false
     t.datetime "last_sign_in_at"
     t.inet "last_sign_in_ip"
     t.datetime "created_at", null: false
@@ -57,16 +57,16 @@ end
 Idea is, it is _exactly_ the same DSL that `db/schema.rb` uses, so:
 
 * it can be just copied from there (or written by hands in usual migration syntax);
-* it is _code_, which can be supplemented with _comments_ explaining what some column does or why the defaults are this way (and structure with sorting and extra empty lines).
+* it is _code_, which can be supplemented with _comments_ explaining what some column does, or why the defaults are this way; it also can be structured with columns reordering and extra blank lines.
 
 So, in reality, your annotation may look like this:
 
 ```ruby
 class User < ApplicationRecord
-  the_schema_is "users", id: :serial, force: :cascade do |t|
+  the_schema_is "users" do |t|
     t.string "email", default: "", null: false
     # We use RSA encryption currently.
-    t.string "encrypted_password", default: "", null: false
+    t.string "encrypted_password", null: false
 
     t.inet "last_sign_in_ip" # FIXME: Legacy, we don't use it anymore because GDPR
 
@@ -85,7 +85,7 @@ Using existing Rubocop's infrastructure brings several great benefits:
 
 * you can include check "if all annotations are actual" in your CI/pre-commit hooks easily;
 * you can preview problems found, and then fix them automatically (with `rubocop -a`) or manually however you see suitable;
-* the changes made with auto-fix is very local (just add/remove/change line about relevant column), so your custom structuring (separating groups of related columns with empty lines) and comments will be preserved;
+* the changes made with auto-fix is very local (just add/remove/change line related to relevant column), so your custom structuring, like separating groups of related columns with empty lines and comments, will be preserved;
 * rubocop is easy to run on some sub-folder, or one file, or files corresponding to some pattern; or exclude permanently for some file or folder.
 
 ### But what the block itself does?
@@ -96,7 +96,7 @@ Nothing.
 
 That's just how it is (at least for now) ¯\\\_(ツ)\_/¯
 
-The block isn't even evaluated at all (so potentially can contain any code, and only Rubocop's cop will complain). Potentially, it _can_ do some useful things (like, on app run in development environment compare scheme of the real DB with declarations in class), but for now, it is just noop declarative schema copy-paste.
+The block isn't even evaluated at all (so potentially can contain any code, and only Rubocop's cop will complain). In the future, it _can_ do some useful things (like, on app run in development environment compare scheme of the real DB with declarations in class), but for now, it is just noop declarative schema copy-paste.
 
 ## Usage
 
@@ -107,11 +107,10 @@ The block isn't even evaluated at all (so potentially can contain any code, and 
     - the-schema-is/cops
   ```
 3. Run `rubocop` and see what it now says about your models.
-4. Now you can add schema definitions manually, or allow `rubocop --auto-fix` to do its job! (NB: you can always use `rubocop --auto-fix --only TheSchemaIs` to auto-fix ONLY this schema thing)
-
-The cop supports some configuration, you can see the current one with `rubocop --show-cops TheSchemaIs/Presence`.
+4. Now you can add schema definitions manually, or allow `rubocop --auto-fix` (or `-a`) to do its job! NB: you can always use `rubocop --auto-fix --only TheSchemaIs` to auto-fix ONLY this schema thing
 
 To make reporting cleaner, all cops are split into:
+
 * `Presence`
 * `MissingColumn`
 * `UnknownColumn`
@@ -121,36 +120,54 @@ It is not advisable to selectively turn them off, but you may know better (for e
 
 ## Setting
 
-All cops support the same 3 settings (so it makes sense to set them for the whole namespace when you need):
+`the-schema-is` cops support some configuration, which should be done on the namespace level in your `.rubocop.yml`, for example:
 
-* `TablePrefix` to guess which table corresponds to model (by default no prefix)
+```yaml
+TheSchemaIs:
+  Schema: db/other-schema-file.rb
+```
+
+Currently available settings are:
+
+* `TablePrefix` to help `the-schema-is` deduce table name from class name;
 * `Schema` to set path to schema (by default `db/schema.rb`)
-* `BaseClass` to guess what is a model (by default `ApplicationRecord` and `ActiveRecord::Base`)
+* `BaseClass` to help `the-schema-is` guess what is a model class (by default `ApplicationRecord` and `ActiveRecord::Base`).
 
-TODO: Examples
+So, if you have your own customly named base class, you should do:
+
+```yaml
+TheSchemaIs:
+  BaseClass: OurOwnBase
+```
 
 Note that Rubocop allows per-folder settings out of the box, which allows TheSchemaIs even at tender version of 0.0.1, support complicated configurations with multiple databases and engines.
 
-TODO: Explain
+For example, consider your models are split into `app/models/users/` and `app/models/products` which are stored in the different databases, then you probably have different schemas and base classes for them. So, to configure it properly, you might want to do in `app/models/users/.rubocop.yml`:
+
+```yaml
+# Don't forget this for all other cops to not be ignored
+inherit_from: ../../../.rubocop.yml
+
+TheSchemaIs:
+  BaseClass: Users::BaseRecord
+  Schema: db/users_schema.rb
+```
 
 ## Some Q&A
 
-* It doesn't check the actual DB?
-* What if I don't use Rubocop?
-* How can I annotate my fabrics, model specs, routes, controllers, ... (which `annotate` allows)?
-* Rubocop is unhappy and ...
+* **Q: It doesn't check the actual DB?** A: No, it does not! At current moment, our belief is that in a healthy Rails codebase `schema.rb` is always corresponding to DB state, so checking against it is enough. This approach makes the tooling much easier (with existing Rubocop's ecosystem of parsers/offences/configurations).
+* **Q: What if I don't use Rubocop?** A: You may want to try, at least? Do you know that you may disable or configure most of its checks to your liking? And auto-correct any code to your preferences?.. Or automatically create "TODO" config-file (which disables all the cops currently raising offenses, and allows to review them and later setup one-by-one)?.. It is much more than "linter making your code to complain some rigid style guide".
+* **Q: Cool, but I still don't want to.** ...OK, then you can disable all cops _except_ for `TheSchemaIs` namespace :)
+* **How do I annotate my fabrics, model specs, routes, controllers, ... (which `annotate` allows)?** You don't. The same way you don't copy-paste the whole definitioin of the class into spec file which tests this class: Definition is in one place, tests and other code using this definition is another. DRY!
+* **Rubocop is unhappy with the code `TheSchemaIs` generated**. There are two known things in generated `the_schema_is` blocks that Rubocop may complain about:
+  * Usage of double quotes for strings, if your config insists of single quotes: that's because we just copy code objects from `schema.rb`. Rubocop's auto-fix will fix it :) (Even in one run: "fixing TheSchemaIs, then fixing quotes");
+  * Too long blocks (if you have tables with dozens of columns, God forbid... like we do). It can be fixed by adding this to `.rubocop.yml`:
+  ```yaml
   Metrics/BlockLength:
+    ExcludedMethods:
+      - the_schema_is
+  ```
 
------
-below this line is drafts/rough thouhts.
+## Author and License
 
-Cop checks (TBD):
-* schema present
-* there is a table in db/schema.rb
-* each column corresponds
-* indexes correspond (tunable)
-* other stuff correspond (tunable)
-* setting: names symbols or strings
-* content / style, duplicates, allowed extra info (like indexes, "allowed but ignored"), enforced extra info, disallowed (nothing except col.defs)
-* multiple db/schema, detect which is which
-* engines
+[Victor Shepelev aka "zverok"](https://zverok.github.io), MIT.
