@@ -1,8 +1,7 @@
 # The schema is ...
 
 [![Gem Version](https://badge.fury.io/rb/the_schema_is.svg)](http://badge.fury.io/rb/the_schema_is)
-[![Build Status](https://travis-ci.org/zverok/the_schema_is.svg?branch=master)](https://travis-ci.org/zverok/the_schema_is)
-![Build Status](https://github.com/zverok/the_schema_is/workflows/Ruby/badge.svg?branch=master)
+![Build Status](https://github.com/zverok/the_schema_is/workflows/CI/badge.svg?branch=master)
 
 `the_schema_is` is a model schema annotation DSL in ActiveSupport.
 
