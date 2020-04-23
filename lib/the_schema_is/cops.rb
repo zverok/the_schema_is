@@ -38,6 +38,14 @@ module TheSchemaIs
       validate
     end
 
+    # We need this method to tell Rubocop that EVEN if app/models/user.rb haven't changed, and
+    # .rubocop.yml haven't changed, we STILL may need to rerun the cop if schema.rb have changed.
+    def external_dependency_checksum
+      return unless schema_path
+
+      Digest::SHA1.hexdigest(File.read(schema_path))
+    end
+
     private
 
     attr_reader :model
