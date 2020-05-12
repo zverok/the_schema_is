@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    the_schema_is (0.0.2)
+    the_schema_is (0.0.3)
       activesupport
       backports (>= 3.16.0)
       ffast (>= 0.1.8)
@@ -43,7 +43,7 @@ GEM
     parallel (1.19.1)
     parser (2.7.1.1)
       ast (~> 2.4.0)
-    pry (0.13.0)
+    pry (0.13.1)
       coderay (~> 1.1)
       method_source (~> 1.0)
     rainbow (3.0.0)
