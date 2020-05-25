@@ -3,7 +3,7 @@
 [![Gem Version](https://badge.fury.io/rb/the_schema_is.svg)](http://badge.fury.io/rb/the_schema_is)
 ![Build Status](https://github.com/zverok/the_schema_is/workflows/CI/badge.svg?branch=master)
 
-`the_schema_is` is a model schema annotation DSL in ActiveSupport.
+`the_schema_is` is a model schema annotation DSL for ActiveSupport models, enforced by Rubocop. [Jump to detailed description →](#so-how-your-approach-is-different).
 
 ### Why annotate?
 
@@ -34,10 +34,10 @@ Annotate gem provides a very powerful and configurable CLI/rake task which allow
 
 It kinda achieves the goal, but in our experience, it also brings some problems:
 
-* annotation regeneration is disruptive, just replacing the whole block with a new one, which produces a lot of "false changes" (e.g. one field with a bit longer name was added → spacing of all fields were changed);
-* if on different developer's machines column order or defaults is different on dev. DB, annotate also decides to rewrite all the annotations, sometimes adding tens files "changed" to PR;
-* regeneration makes it hard to use schema annotation for commenting/explaining some fields: because regeneration will lose them, and because comments-between-comments will be hard to distinguish;
-* the syntax of annotations is kinda ad-hoc, which makes it harder to add them by hand, so regeneration becomes the _only_ way to add them.
+* annotation **regeneration is disruptive**, just replacing the whole block with a new one, which produces a lot of "false changes" (e.g. one field with a bit longer name was added → spacing of all fields were changed);
+* if on different developer's machines **column order or defaults is different** in dev. DB, annotate also decides to rewrite all the annotations, sometimes adding tens files "changed" to PR;
+* regeneration makes it **hard to use schema annotation for commenting/explaining** some fields: because regeneration will lose them, and because comments-between-comments will be hard to distinguish;
+* the **syntax of annotations is kinda ad-hoc**, which makes it harder to add them by hand, so regeneration becomes the _only_ way to add them.
 
 ### So, how your approach is different?..
 
@@ -143,12 +143,12 @@ TheSchemaIs:
   BaseClass: OurOwnBase
 ```
 
-Note that Rubocop allows per-folder settings out of the box, which allows TheSchemaIs even at the tender version of 0.0.1, support complicated configurations with multiple databases and engines.
+Note that Rubocop allows per-folder settings out of the box, which allows TheSchemaIs, even at the tender version of 0.0.3, to support complicated configurations with multiple databases and engines.
 
 For example, consider your models are split into `app/models/users/` and `app/models/products` which are stored in the different databases, then you probably have different schemas and base classes for them. So, to configure it properly, you might want to do in `app/models/users/.rubocop.yml`:
 
 ```yaml
-# Don't forget this for all other cops to not be ignored
+# Don't forget this for all other cop settings to not be ignored
 inherit_from: ../../../.rubocop.yml
 
 TheSchemaIs:
@@ -158,13 +158,18 @@ TheSchemaIs:
 
 ## Some Q&A
 
-* **Q: It doesn't check the actual DB?** A: No, it does not! At the current moment, our belief is that in a healthy Rails codebase `schema.rb` is always corresponding to DB state, so checking against it is enough. This approach makes the tooling much easier (with existing Rubocop's ecosystem of parsers/offenses/configurations).
-* **Q: What if I don't use Rubocop?** A: You may want to try, at least? Do you know that you may disable or configure most of its checks to your liking? And auto-correct any code to your preferences?.. Or automatically create "TODO" config-file (which disables all the cops currently raising offenses, and allows to review them and later setup one-by-one)?.. It is much more than "linter making your code to complain about some rigid style guide".
-* **Q: Cool, but I still don't want to.** ...OK, then you can disable all cops _except_ for `TheSchemaIs` namespace :)
-* **How do I annotate my fabrics, model specs, routes, controllers, ... (which `annotate` allows)?** You don't. The same way you don't copy-paste the whole definition of the class into spec file which tests this class: Definition is in one place, tests and other code using this definition is another. DRY!
-* **Rubocop is unhappy with the code `TheSchemaIs` generated**. There are two known things in generated `the_schema_is` blocks that Rubocop may complain about:
-  * Usage of double quotes for strings, if your config insists on single quotes: that's because we just copy code objects from `schema.rb`. Rubocop's auto-fix will fix it :) (Even in one run: "fixing TheSchemaIs, then fixing quotes");
-  * Too long blocks (if you have tables with dozens of columns, God forbid... as we do). It can be fixed by adding this to `.rubocop.yml`:
+* **Q: It doesn't check the actual DB?**
+  * A: No, it does not! At the current moment, our belief is that in a healthy Rails codebase `schema.rb` is always corresponding to DB state, so checking against it is enough. This approach makes the tooling much easier (with existing Rubocop's ecosystem of parsers/offenses/configurations).
+* **Q: What if I don't use Rubocop?**
+  * A: You may want to try, at least? Do you know that you may disable or configure most of its checks to your liking? And auto-correct any code to your preferences?.. Or automatically create "TODO" config-file (which disables all the cops currently raising offenses, and allows to review them and later setup one-by-one)?.. It is much more than "linter making your code to complain about some rigid style guide".
+* **Q: Cool, but I still don't want to.**
+  * A: ...OK, then you can disable all cops _except_ for `TheSchemaIs` namespace :)
+* **How do I annotate my fabrics, model specs, routes, controllers, ... (which `annotate` allows)?**
+  * A: You don't. The same way you don't copy-paste the whole definition of the class into spec file which tests this class: Definition is in one place, tests and other code using this definition is another. DRY!
+* **Rubocop is unhappy with the code `TheSchemaIs` generated**.
+  * A: There are two known things in generated `the_schema_is` blocks that Rubocop may complain about:
+    * Usage of double quotes for strings, if your config insists on single quotes: that's because we just copy code objects from `schema.rb`. Rubocop's auto-fix will fix it :) (Even in one run: "fixing TheSchemaIs, then fixing quotes");
+    * Too long blocks (if you have tables with dozens of columns, God forbid... as we do). It can be fixed by adding this to `.rubocop.yml`:
   ```yaml
   Metrics/BlockLength:
     ExcludedMethods:
