@@ -215,7 +215,9 @@ module TheSchemaIs
       model_columns
         .map { |name, col| [col, schema_columns[name]] }
         .reject { |mcol, scol|
-          mcol.type == scol.type && mcol.definition_source == scol.definition_source
+          # When column is not in schema, we shouldn't try to check it: UnknownColumn cop will
+          # handle.
+          !scol || mcol.type == scol.type && mcol.definition_source == scol.definition_source
         }
     end
   end

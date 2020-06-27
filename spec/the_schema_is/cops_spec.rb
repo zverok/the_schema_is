@@ -383,6 +383,22 @@ RSpec.describe TheSchemaIs, :config_ns do
       RUBY
     }
 
+    specify {
+      # Shouldn't try to fail on unknown column, that's what UnknownColumn cop is for...
+      expect_no_offenses(<<~RUBY)
+        class Comment < ApplicationRecord
+          the_schema_is do |t|
+            t.text     "body"
+            t.integer  "user_id"
+            t.integer  "article_id"
+            t.datetime "created_at", null: false
+            t.datetime "updated_at", null: false
+            t.string   "unknown"
+          end
+        end
+      RUBY
+    }
+
     it_behaves_like 'autocorrect', <<~SRC_RUBY,
         class Comment < ApplicationRecord
           the_schema_is do |t|
