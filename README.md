@@ -88,7 +88,7 @@ Using existing Rubocop's infrastructure brings several great benefits:
 
 * you can include checking "if all annotations are actual" in your CI/pre-commit hooks easily;
 * you can preview problems found, and then fix them automatically (with `rubocop -a`) or manually however you see suitable;
-* the changes made with auto-fix is very local (just add/remove/change line related to relevant column), so your custom structuring, like separating groups of related columns with empty lines and comments, will be preserved;
+* the changes made with auto-correct is very local (just add/remove/change line related to relevant column), so your custom structuring, like separating groups of related columns with empty lines and comments, will be preserved;
 * rubocop is easy to run on some sub-folder or one file, or files corresponding to some pattern; or exclude permanently for some file or folder.
 
 ### But what the block itself does?
@@ -110,7 +110,7 @@ The block isn't even evaluated at all (so potentially can contain any code, and 
     - the_schema_is/cops
   ```
 3. Run `rubocop` and see what it now says about your models.
-4. Now you can add schema definitions manually, or allow `rubocop --auto-fix` (or `-a`) to do its job! NB: you can always use `rubocop --auto-fix --only TheSchemaIs` to auto-fix ONLY this schema thing
+4. Now you can add schema definitions manually, or allow `rubocop --auto-correct` (or `-a`) to do its job! NB: you can always use `rubocop --auto-correct --only TheSchemaIs` to auto-correct ONLY this schema thing
 
 To make reporting cleaner, all cops are split into:
 
@@ -168,7 +168,7 @@ TheSchemaIs:
   * A: You don't. The same way you don't copy-paste the whole definition of the class into spec file which tests this class: Definition is in one place, tests and other code using this definition is another. DRY!
 * **Rubocop is unhappy with the code `TheSchemaIs` generated**.
   * A: There are two known things in generated `the_schema_is` blocks that Rubocop may complain about:
-    * Usage of double quotes for strings, if your config insists on single quotes: that's because we just copy code objects from `schema.rb`. Rubocop's auto-fix will fix it :) (Even in one run: "fixing TheSchemaIs, then fixing quotes");
+    * Usage of double quotes for strings, if your config insists on single quotes: that's because we just copy code objects from `schema.rb`. Rubocop's auto-correct will fix it :) (Even in one run: "fixing TheSchemaIs, then fixing quotes");
     * Too long blocks (if you have tables with dozens of columns, God forbid... as we do). It can be fixed by adding this to `.rubocop.yml`:
   ```yaml
   Metrics/BlockLength:
