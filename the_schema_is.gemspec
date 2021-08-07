@@ -12,7 +12,7 @@ Gem::Specification.new do |s|
   EOF
   s.licenses = ['MIT']
 
-  s.required_ruby_version = '>= 2.6.0'
+  s.required_ruby_version = '>= 2.5.0'
 
   s.files = `git ls-files lib config LICENSE.txt *.md`.split($RS)
   s.require_paths = ["lib"]

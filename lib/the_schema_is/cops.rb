@@ -25,9 +25,10 @@ module TheSchemaIs
     extend Memoist
 
     def self.included(cls)
-      cls.define_singleton_method(:badge) {
+      cls.define_singleton_method(:badge) do
         RuboCop::Cop::Badge.for("TheSchemaIs::#{name.split('::').last}")
-      }
+      end
+      super
     end
 
     def on_class(node)
@@ -63,14 +64,15 @@ module TheSchemaIs
     end
 
     memoize def model_columns
-      statements = model.schema.ffast('(block (send nil :the_schema_is) (args) $...)').last.last
+      statements = model.schema.ast_search('(block (send nil :the_schema_is) (args) $...)')
+                        .last.last
 
       Cops::Parser.columns(statements).to_h { |col| [col.name, col] }
     end
 
     memoize def schema_columns
       # FIXME: should be already done in Parser.schema, probably!
-      statements = schema.ffast('(block (send nil :create_table) (args) $...)').last.last
+      statements = schema.ast_search('(block (send nil :create_table) (args) $...)').last.last
 
       Cops::Parser.columns(statements).to_h { |col| [col.name, col] }
     end

@@ -4,11 +4,11 @@ module TheSchemaIs
   module Cops
     module NodeRefinements
       refine ::Parser::AST::Node do
-        def ffast(expr)
+        def ast_search(expr)
           Fast.search(expr, self)
         end
 
-        def ffast_match?(expr)
+        def ast_match?(expr)
           Fast.match?(expr, self)
         end
 

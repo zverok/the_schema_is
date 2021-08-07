@@ -40,6 +40,13 @@ RSpec.describe TheSchemaIs, :config_ns do
 
     specify {
       expect_offense(<<~RUBY)
+        class Comment < ApplicationRecord; end
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ The schema is not specified in the model (use the_schema_is statement)
+      RUBY
+    }
+
+    specify {
+      expect_offense(<<~RUBY)
         class Dog < ApplicationRecord
         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Table "dogs" is not defined in db/schema.rb
 

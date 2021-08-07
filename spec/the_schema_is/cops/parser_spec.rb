@@ -3,7 +3,7 @@
 RSpec.describe TheSchemaIs::Cops::Parser do
   describe '.model' do
     shared_examples 'model extractor' do |code, attrs|
-      subject { described_class.model(Fast.ast(code)) }
+      subject { described_class.model(described_class.parse(code)) }
 
       if attrs.nil?
         it { is_expected.to be_nil }
@@ -51,7 +51,7 @@ RSpec.describe TheSchemaIs::Cops::Parser do
         end
       end
       RUBY
-      {class_name: 'User', table_name: 'users', schema: Astrolabe::Node}
+      {class_name: 'User', table_name: 'users', schema: ::Parser::AST::Node}
 
     it_behaves_like 'model extractor',
       <<~RUBY,
@@ -61,7 +61,7 @@ RSpec.describe TheSchemaIs::Cops::Parser do
         end
       end
       RUBY
-      {class_name: 'User', table_name: 'users', schema: Astrolabe::Node}
+      {class_name: 'User', table_name: 'users', schema: ::Parser::AST::Node}
 
     it_behaves_like 'model extractor',
       <<~RUBY,
@@ -79,12 +79,12 @@ RSpec.describe TheSchemaIs::Cops::Parser do
 
     it { is_expected.to be_a(Hash) }
     its(:keys) { is_expected.to start_with('articles', 'comments', 'favorites') }
-    its(:values) { is_expected.to all be_a Astrolabe::Node }
+    its(:values) { is_expected.to all be_a ::Parser::AST::Node }
   end
 
   describe '.columns' do
     shared_examples 'column extractor' do |code, attrs|
-      subject { described_class.columns(Fast.ast(code)) }
+      subject { described_class.columns(described_class.parse(code)) }
 
       it { is_expected.to contain_exactly(*attrs.map { |a| have_attributes(a) }) }
     end
