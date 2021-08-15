@@ -11,6 +11,10 @@ TheSchemaIs/Presence:
    Description: "Check presence of the_schema_is statement in ActiveRecord models"
    Enabled: true
 
+TheSchemaIs/WrongTableName:
+   Description: "Check table name define by the_schema_is statement against one in schema.rb"
+   Enabled: true
+
 TheSchemaIs/MissingColumn:
   Description: "Check columns missing in the_schema_is definition (but present in schema.rb)"
   Enabled: true

@@ -1,6 +1,6 @@
 Gem::Specification.new do |s|
   s.name     = 'the_schema_is'
-  s.version  = '0.0.3'
+  s.version  = '0.0.4'
   s.authors  = ['Victor Shepelev']
   s.email    = 'zverok.offline@gmail.com'
   s.homepage = 'https://github.com/zverok/the_schema_is'
@@ -18,9 +18,8 @@ Gem::Specification.new do |s|
   s.require_paths = ["lib"]
 
   s.add_runtime_dependency 'backports', '>= 3.16.0'
-  s.add_runtime_dependency 'rubocop'
+  s.add_runtime_dependency 'rubocop', '>= 1.0.0'
   s.add_runtime_dependency 'activesupport' # it is a plugin for ActiveRecord anyways, and we need perfectly same inflection
-  s.add_runtime_dependency 'ffast', '>= 0.1.8'
   s.add_runtime_dependency 'memoist'
 
   s.add_development_dependency 'rubocop-rspec'

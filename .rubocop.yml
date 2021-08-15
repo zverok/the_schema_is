@@ -10,6 +10,7 @@ AllCops:
   DisplayCopNames: true
   TargetRubyVersion: 2.5
   NewCops: enable
+  SuggestExtensions: false
 
 # That's my style
 

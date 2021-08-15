@@ -2,7 +2,6 @@
 
 require 'memoist'
 require 'rubocop'
-require 'fast'
 require 'backports/latest'
 
 require_relative 'cops/node_util'
@@ -36,7 +35,7 @@ module TheSchemaIs
                                   base_classes: cop_config.fetch('BaseClass'),
                                   table_prefix: cop_config['TablePrefix']) or return
 
-      validate
+      register_offense(node)
     end
 
     # We need this method to tell Rubocop that EVEN if app/models/user.rb haven't changed, and
@@ -51,7 +50,7 @@ module TheSchemaIs
 
     attr_reader :model
 
-    def validate
+    def register_offense(node)
       fail NotImplementedError
     end
 
@@ -64,35 +63,34 @@ module TheSchemaIs
     end
 
     memoize def model_columns
-      statements = model.schema.ast_search('(block (send nil :the_schema_is) (args) $...)')
+      statements = model.schema.ast_search('(block (send nil? :the_schema_is _?) _ $...)')
                         .last.last
 
       Cops::Parser.columns(statements).to_h { |col| [col.name, col] }
     end
 
     memoize def schema_columns
-      # FIXME: should be already done in Parser.schema, probably!
-      statements = schema.ast_search('(block (send nil :create_table) (args) $...)').last.last
-
-      Cops::Parser.columns(statements).to_h { |col| [col.name, col] }
+      Cops::Parser.columns(schema).to_h { |col| [col.name, col] }
     end
   end
 
-  class Presence < RuboCop::Cop::Cop
+  class Presence < RuboCop::Cop::Base
     include Common
+    extend RuboCop::Cop::AutoCorrector
 
     MSG_NO_MODEL_SCHEMA = 'The schema is not specified in the model (use the_schema_is statement)'
     MSG_NO_DB_SCHEMA = 'Table "%s" is not defined in %s'
 
-    def autocorrect(node)
-      return unless schema
+    private
 
-      m = model
+    def register_offense(node)
+      schema.nil? and
+        add_offense(model.source, message: MSG_NO_DB_SCHEMA % [model.table_name, schema_path])
 
-      lambda do |corrector|
+      model.schema.nil? and add_offense(model.source, message: MSG_NO_MODEL_SCHEMA) do |corrector|
         indent = node.loc.expression.column + 2
         code = [
-          "the_schema_is #{m.table_name.to_s.inspect} do |t|",
+          "the_schema_is #{model.table_name.to_s.inspect} do |t|",
           *schema_columns.map { |_, col| "  #{col.source.loc.expression.source}" },
           'end'
         ].map { |s| ' ' * indent + s }.join("\n").then { |s| "\n#{s}\n" }
@@ -101,52 +99,71 @@ module TheSchemaIs
         corrector.insert_after(node.children[1].loc.expression, code)
       end
     end
+  end
+
+  class WrongTableName < RuboCop::Cop::Base
+    include Common
+    extend RuboCop::Cop::AutoCorrector
+
+    MSG_WRONG_TABLE_NAME = 'The real table name should be %p'
+    MSG_NO_TABLE_NAME = 'Table name is not specified'
 
     private
 
-    def validate
-      schema.nil? and
-        add_offense(model.source, message: MSG_NO_DB_SCHEMA % [model.table_name, schema_path])
-      model.schema.nil? and add_offense(model.source, message: MSG_NO_MODEL_SCHEMA)
+    def register_offense(_node)
+      return if model.schema.nil? || schema.nil?
+
+      pp
+
+      if model.table_name_node.nil?
+        add_offense(model.schema, message: MSG_NO_TABLE_NAME) do |corrector|
+          corrector.insert_after(model.schema.children[0].loc.expression, " #{model.table_name.to_s.inspect}")
+        end
+      elsif model.table_name_node.children[0] != model.table_name
+        add_offense(model.table_name_node,
+                    message: MSG_WRONG_TABLE_NAME % model.table_name) do |corrector|
+          corrector.replace(model.table_name_node.loc.expression, model.table_name.to_s.inspect)
+        end
+      end
     end
   end
 
-  class MissingColumn < RuboCop::Cop::Cop
+  class MissingColumn < RuboCop::Cop::Base
     include Common
+    extend RuboCop::Cop::AutoCorrector
 
     MSG = 'Column "%s" definition is missing'
 
-    def autocorrect(_node)
-      lambda do |corrector|
-        missing_columns.each { |name, col|
-          prev_statement = model_columns
-                           .slice(*schema_columns.keys[0...schema_columns.keys.index(name)])
-                           .values.last&.source
-          if prev_statement
-            indent = prev_statement.loc.expression.column
-            corrector.insert_after(
-              prev_statement.loc.expression,
-              "\n#{' ' * indent}#{col.source.loc.expression.source}"
-            )
-          else
-            indent = model.schema.loc.expression.column + 2
-            corrector.insert_after(
-              # of "the_schema_is do |t|" -- children[1] is "|t|""
-              model.schema.children[1].loc.expression,
-              "\n#{' ' * indent}#{col.source.loc.expression.source}"
-            )
-          end
-        }
+    private
+
+    def register_offense(_node)
+      return if model.schema.nil? || schema.nil?
+
+      missing_columns.each do |name, col|
+        add_offense(model.schema, message: MSG % col.name) do |corrector|
+          insert_column(corrector, name, col)
+        end
       end
     end
 
-    private
+    def insert_column(corrector, name, col)
+      prev_statement = model_columns
+                       .slice(*schema_columns.keys[0...schema_columns.keys.index(name)])
+                       .values.last&.source
 
-    def validate
-      return if model.schema.nil? || schema.nil?
-
-      missing_columns.each do |_, col|
-        add_offense(model.schema, message: MSG % col.name)
+      if prev_statement
+        indent = prev_statement.loc.expression.column
+        corrector.insert_after(
+          prev_statement.loc.expression,
+          "\n#{' ' * indent}#{col.source.loc.expression.source}"
+        )
+      else
+        indent = model.schema.loc.expression.column + 2
+        corrector.insert_after(
+          # of "the_schema_is do |t|" -- children[1] is "|t|""
+          model.schema.children[1].loc.expression,
+          "\n#{' ' * indent}#{col.source.loc.expression.source}"
+        )
       end
     end
 
@@ -155,14 +172,19 @@ module TheSchemaIs
     end
   end
 
-  class UnknownColumn < RuboCop::Cop::Cop
+  class UnknownColumn < RuboCop::Cop::Base
     include Common
+    extend RuboCop::Cop::AutoCorrector
 
     MSG = 'Uknown column "%s"'
 
-    def autocorrect(_node)
-      lambda do |corrector|
-        extra_columns.each do |_, col|
+    private
+
+    def register_offense(_node)
+      return if model.schema.nil? || schema.nil?
+
+      extra_columns.each do |_, col|
+        add_offense(col.source, message: MSG % col.name) do |corrector|
           src_range = col.source.loc.expression
           end_pos = col.source.next_sibling.then { |n|
             n ? n.loc.expression.begin_pos - 2 : col.source.find_parent(:block).loc.end.begin_pos
@@ -174,42 +196,27 @@ module TheSchemaIs
       end
     end
 
-    private
-
-    def validate
-      return if model.schema.nil? || schema.nil?
-
-      extra_columns.each do |_, col|
-        add_offense(col.source, message: MSG % col.name)
-      end
-    end
-
     def extra_columns
       model_columns.reject { |name,| schema_columns.keys.include?(name) }
     end
   end
 
-  class WrongColumnDefinition < RuboCop::Cop::Cop
+  class WrongColumnDefinition < RuboCop::Cop::Base
     include Common
+    extend RuboCop::Cop::AutoCorrector
 
     MSG = 'Wrong column definition: expected `%s`'
 
-    def autocorrect(_node)
-      lambda do |corrector|
-        wrong_columns.each do |mcol, scol|
-          corrector.replace(mcol.source.loc.expression, scol.source.loc.expression.source)
-        end
-      end
-    end
-
     private
 
-    def validate
+    def register_offense(_node)
       return if model.schema.nil? || schema.nil?
 
       wrong_columns
         .each do |mcol, scol|
-          add_offense(mcol.source, message: MSG % scol.source.loc.expression.source)
+          add_offense(mcol.source, message: MSG % scol.source.loc.expression.source) do |corrector|
+            corrector.replace(mcol.source.loc.expression, scol.source.loc.expression.source)
+          end
         end
     end
 

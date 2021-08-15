@@ -29,7 +29,7 @@ end
 RSpec.shared_context 'config_ns', :config_ns do
   let(:config) do
     # Module#<
-    unless described_class < RuboCop::Cop::Cop
+    unless described_class < RuboCop::Cop::Base
       raise '`config` must be used in `describe SomeCopClass do .. end`'
     end
 

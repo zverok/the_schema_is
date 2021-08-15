@@ -115,6 +115,7 @@ The block isn't even evaluated at all (so potentially can contain any code, and 
 To make reporting cleaner, all cops are split into:
 
 * `Presence`
+* `WrongTableName`
 * `MissingColumn`
 * `UnknownColumn`
 * `WrongColumnDefinition`
@@ -143,7 +144,7 @@ TheSchemaIs:
   BaseClass: OurOwnBase
 ```
 
-Note that Rubocop allows per-folder settings out of the box, which allows TheSchemaIs, even at the tender version of 0.0.3, to support complicated configurations with multiple databases and engines.
+Note that Rubocop allows per-folder settings out of the box, which allows TheSchemaIs to support complicated configurations with multiple databases and engines.
 
 For example, consider your models are split into `app/models/users/` and `app/models/products` which are stored in the different databases, then you probably have different schemas and base classes for them. So, to configure it properly, you might want to do in `app/models/users/.rubocop.yml`:
 

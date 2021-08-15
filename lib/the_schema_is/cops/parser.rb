@@ -17,7 +17,8 @@ module TheSchemaIs
 
       COLUMN_DEFS = (STANDARD_COLUMN_TYPES + POSTGRES_COLUMN_TYPES + %i[column]).freeze
 
-      Model = Struct.new(:class_name, :table_name, :source, :schema, keyword_init: true)
+      Model = Struct.new(:class_name, :table_name, :source, :schema, :table_name_node,
+                         keyword_init: true)
 
       Column = Struct.new(:name, :type, :definition, :source, keyword_init: true) do
         def definition_source
@@ -28,57 +29,56 @@ module TheSchemaIs
       end
 
       def self.parse(code)
-        Fast.ast(code)
+        # TODO: Some kind of "current version" (ask Rubocop!)
+        RuboCop::AST::ProcessedSource.new(code, 2.7).ast
       end
 
       def self.schema(path)
         ast = parse(File.read(path))
 
-        content =
-          ast
-          .ast_search('(block (send (const (const nil :ActiveRecord) :Schema) :define) _ $_)')
-          .last.first
-        content.ast_search('(block (send nil :create_table (str $_)) _ _)')
-               .each_slice(2).to_h { |t, name| [Array(name).first, t] } # FIXME: Why it sometimes makes arrays, and sometimes not?..
+        ast.ast_search('(block (send nil? :create_table (str $_) _) _ $_)').to_h
       end
 
       def self.model(ast, base_classes: %w[ActiveRecord::Base ApplicationRecord], table_prefix: nil)
         base = base_classes_query(base_classes)
-        ast.ast_search("(class $_ #{base})").each_slice(2)
+        ast.ast_search("$(class $_ #{base} _)")
            .map { |node, name| node2model(name, node, table_prefix.to_s) }
            .compact
            .first
       end
 
       def self.node2model(name_node, definition_node, table_prefix) # rubocop:disable Metrics/CyclomaticComplexity,Metrics/PerceivedComplexity
-        return if definition_node.ast_search('(send self abstract_class= true)').any?
+        return if definition_node.ast_search('(send self :abstract_class= true)')&.any?
 
         # If all children are classes/modules -- model is here only as a namespace, shouldn't be
         # parsed/have the_schema_is
-        return if definition_node
-                  .children[2]&.arraify&.all? { |n| %i[class module].include?(n.type) }
+        if definition_node.children&.dig(2)&.arraify&.all? { |n| %i[class module].include?(n.type) }
+          return
+        end
 
-        class_name = name_node.first.loc.expression.source
+        class_name = name_node.loc.expression.source
 
-        schema = definition_node.ast_search('$(block (send nil :the_schema_is) _ ...')&.last
+        schema_node, name_node =
+          definition_node.ast_search('$(block (send nil? :the_schema_is $_?) _ ...)')&.last
 
         # TODO: https://api.rubyonrails.org/classes/ActiveRecord/ModelSchema/ClassMethods.html#method-i-table_name
         # * consider table_prefix/table_suffix settings
         # * also, consider engines!
-        table_name = definition_node.ast_search('(send self table_name= (str $_)')&.last
+        table_name = definition_node.ast_search('(send self :table_name= (str $_))')&.last
 
         Model.new(
           class_name: class_name,
           table_name: table_name ||
             table_prefix.+(ActiveSupport::Inflector.tableize(class_name)),
           source: definition_node,
-          schema: schema
+          schema: schema_node,
+          table_name_node: name_node&.first
         )
       end
 
       def self.base_classes_query(classes)
         classes
-          .map { |cls| cls.split('::').inject('nil') { |res, str| "(const #{res} :#{str})" } }
+          .map { |cls| cls.split('::').inject('nil?') { |res, str| "(const #{res} :#{str})" } }
           .join(' ')
           .then { |str| "{#{str}}" }
       end
@@ -87,10 +87,10 @@ module TheSchemaIs
         ast.arraify.map { |node|
           # FIXME: Of course it should be easier to say "optional additional params"
           if (type, name, defs =
-                node.ast_match?('(send {(send nil t) (lvar t)} $_ (str $_) $...'))
+                node.ast_match('(send {(send nil? :t) (lvar :t)} $_ (str $_) $_)'))
             Column.new(name: name, type: type, definition: defs, source: node) \
               if COLUMN_DEFS.include?(type)
-          elsif (type, name = node.ast_match?('(send {(send nil t) (lvar t)} $_ (str $_)'))
+          elsif (type, name = node.ast_match('(send {(send nil? :t) (lvar :t)} $_ (str $_))'))
             Column.new(name: name, type: type, source: node) if COLUMN_DEFS.include?(type)
           end
         }.compact

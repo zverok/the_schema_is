@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-RSpec.describe TheSchemaIs, :config_ns do
+RSpec.describe TheSchemaIs::Cops, :config_ns do
   subject(:cop) { described_class.new(config) }
 
   let(:cop_config) { real_config.transform_keys(&:to_s) }
@@ -36,6 +36,19 @@ RSpec.describe TheSchemaIs, :config_ns do
         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ The schema is not specified in the model (use the_schema_is statement)
         end
       RUBY
+
+      expect_correction(<<~RUBY)
+        class Comment < ApplicationRecord
+          the_schema_is "comments" do |t|
+            t.text     "body"
+            t.integer  "user_id"
+            t.integer  "article_id"
+            t.datetime "created_at", null: false
+            t.datetime "updated_at", null: false
+          end
+
+        end
+      RUBY
     }
 
     specify {
@@ -50,11 +63,13 @@ RSpec.describe TheSchemaIs, :config_ns do
         class Dog < ApplicationRecord
         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Table "dogs" is not defined in db/schema.rb
 
-          the_schema_is do
+          the_schema_is "dogs" do
             t.string "name"
           end
         end
       RUBY
+
+      expect_no_corrections
     }
 
     # Model used only for namespacing, shouldn't have schema described!
@@ -73,7 +88,7 @@ RSpec.describe TheSchemaIs, :config_ns do
       specify {
         expect_no_offenses(<<~RUBY)
           class Dog < ApplicationRecord
-            the_schema_is do
+            the_schema_is "dogs" do
               t.string "name"
             end
           end
@@ -85,7 +100,7 @@ RSpec.describe TheSchemaIs, :config_ns do
           class Comment < ApplicationRecord
           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Table "comments" is not defined in db/schema2.rb
 
-            the_schema_is do
+            the_schema_is "comments" do
               t.string "name"
             end
           end
@@ -109,6 +124,19 @@ RSpec.describe TheSchemaIs, :config_ns do
           ^^^^^^^^^^^^^^^^^^^^ The schema is not specified in the model (use the_schema_is statement)
           end
         RUBY
+
+        expect_correction(<<~RUBY)
+          class Comment < Base
+            the_schema_is "comments" do |t|
+              t.text     "body"
+              t.integer  "user_id"
+              t.integer  "article_id"
+              t.datetime "created_at", null: false
+              t.datetime "updated_at", null: false
+            end
+
+          end
+        RUBY
       }
     end
 
@@ -118,7 +146,7 @@ RSpec.describe TheSchemaIs, :config_ns do
       specify {
         expect_no_offenses(<<~RUBY)
           class Tag < ApplicationRecord
-            the_schema_is do
+            the_schema_is "tags" do
               t.string "text"
             end
           end
@@ -133,40 +161,40 @@ RSpec.describe TheSchemaIs, :config_ns do
         RUBY
       }
     end
-
-    it_behaves_like 'autocorrect', <<~SRC_RUBY,
-      class Comment < ApplicationRecord
-      end
-    SRC_RUBY
-    <<~DST_RUBY
-      class Comment < ApplicationRecord
-        the_schema_is "comments" do |t|
-          t.text     "body"
-          t.integer  "user_id"
-          t.integer  "article_id"
-          t.datetime "created_at", null: false
-          t.datetime "updated_at", null: false
-        end
-
-      end
-    DST_RUBY
-
-    # Can't correct what's not in a schema
-    it_behaves_like 'autocorrect', <<~SRC_RUBY,
-      class Dog < ApplicationRecord
-      end
-    SRC_RUBY
-    <<~DST_RUBY
-      class Dog < ApplicationRecord
-      end
-    DST_RUBY
   end
 
-  describe TheSchemaIs::MissingColumn do
+  describe TheSchemaIs::WrongTableName do
     specify {
       expect_no_offenses(<<~RUBY)
         class Comment < ApplicationRecord
-          the_schema_is do |t|
+          the_schema_is "comments" do |t|
+            t.text     "body"
+            t.integer  "user_id"
+            t.integer  "article_id"
+            t.datetime "created_at", null: false
+            t.datetime "updated_at", null: false
+          end
+        end
+      RUBY
+    }
+
+    specify {
+      expect_offense(<<~RUBY)
+        class Comment < ApplicationRecord
+          the_schema_is "cmnts" do |t|
+                        ^^^^^^^ The real table name should be "comments"
+            t.text     "body"
+            t.integer  "user_id"
+            t.integer  "article_id"
+            t.datetime "created_at", null: false
+            t.datetime "updated_at", null: false
+          end
+        end
+      RUBY
+
+      expect_correction(<<~RUBY)
+        class Comment < ApplicationRecord
+          the_schema_is "comments" do |t|
             t.text     "body"
             t.integer  "user_id"
             t.integer  "article_id"
@@ -181,9 +209,38 @@ RSpec.describe TheSchemaIs, :config_ns do
       expect_offense(<<~RUBY)
         class Comment < ApplicationRecord
           the_schema_is do |t|
-          ^^^^^^^^^^^^^^^^^^^^ Column "article_id" definition is missing
+          ^^^^^^^^^^^^^^^^^^^^ Table name is not specified
             t.text     "body"
             t.integer  "user_id"
+            t.integer  "article_id"
+            t.datetime "created_at", null: false
+            t.datetime "updated_at", null: false
+          end
+        end
+      RUBY
+
+      expect_correction(<<~RUBY)
+        class Comment < ApplicationRecord
+          the_schema_is "comments" do |t|
+            t.text     "body"
+            t.integer  "user_id"
+            t.integer  "article_id"
+            t.datetime "created_at", null: false
+            t.datetime "updated_at", null: false
+          end
+        end
+      RUBY
+    }
+  end
+
+  describe TheSchemaIs::MissingColumn do
+    specify {
+      expect_no_offenses(<<~RUBY)
+        class Comment < ApplicationRecord
+          the_schema_is "comments" do |t|
+            t.text     "body"
+            t.integer  "user_id"
+            t.integer  "article_id"
             t.datetime "created_at", null: false
             t.datetime "updated_at", null: false
           end
@@ -191,9 +248,25 @@ RSpec.describe TheSchemaIs, :config_ns do
       RUBY
     }
 
+    specify {
+      expect_offense(<<~RUBY)
+        class Comment < ApplicationRecord
+          the_schema_is "comments" do |t|
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Column "article_id" definition is missing
+            t.text     "body"
+            t.integer  "user_id"
+            t.datetime "created_at", null: false
+            t.datetime "updated_at", null: false
+          end
+        end
+      RUBY
+
+      # FIXME: Somehow expect_correction doesn't work here...
+    }
+
     it_behaves_like 'autocorrect', <<~SRC_RUBY,
       class Comment < ApplicationRecord
-        the_schema_is do |t|
+        the_schema_is "comments" do |t|
           t.text     "body"
           t.integer  "user_id"
           t.datetime "created_at", null: false
@@ -203,7 +276,7 @@ RSpec.describe TheSchemaIs, :config_ns do
     SRC_RUBY
     <<~DST_RUBY
       class Comment < ApplicationRecord
-        the_schema_is do |t|
+        the_schema_is "comments" do |t|
           t.text     "body"
           t.integer  "user_id"
           t.integer  "article_id"
@@ -216,7 +289,7 @@ RSpec.describe TheSchemaIs, :config_ns do
     # First column
     it_behaves_like 'autocorrect', <<~SRC_RUBY,
       class Comment < ApplicationRecord
-        the_schema_is do |t|
+        the_schema_is "comments" do |t|
           t.integer  "user_id"
           t.integer  "article_id"
           t.datetime "created_at", null: false
@@ -226,7 +299,7 @@ RSpec.describe TheSchemaIs, :config_ns do
     SRC_RUBY
     <<~DST_RUBY
       class Comment < ApplicationRecord
-        the_schema_is do |t|
+        the_schema_is "comments" do |t|
           t.text     "body"
           t.integer  "user_id"
           t.integer  "article_id"
@@ -238,7 +311,7 @@ RSpec.describe TheSchemaIs, :config_ns do
 
     it_behaves_like 'autocorrect', <<~SRC_RUBY,
       class Comment < ApplicationRecord
-        the_schema_is do |t|
+        the_schema_is "comments" do |t|
           # Comments and spaces are important
           t.integer  "user_id"
           t.integer  "article_id"
@@ -250,7 +323,7 @@ RSpec.describe TheSchemaIs, :config_ns do
     SRC_RUBY
     <<~DST_RUBY
       class Comment < ApplicationRecord
-        the_schema_is do |t|
+        the_schema_is "comments" do |t|
           t.text     "body"
           # Comments and spaces are important
           t.integer  "user_id"
@@ -269,7 +342,7 @@ RSpec.describe TheSchemaIs, :config_ns do
     specify {
       expect_no_offenses(<<~RUBY)
         class Comment < ApplicationRecord
-          the_schema_is do |t|
+          the_schema_is "comments" do |t|
             t.text     "body"
             t.integer  "user_id"
             t.integer  "article_id"
@@ -283,7 +356,7 @@ RSpec.describe TheSchemaIs, :config_ns do
     specify {
       expect_offense(<<~RUBY)
         class Comment < ApplicationRecord
-          the_schema_is do |t|
+          the_schema_is "comments" do |t|
             t.text     "body"
             t.integer  "user_id"
             t.integer  "article_id"
@@ -298,7 +371,7 @@ RSpec.describe TheSchemaIs, :config_ns do
 
     it_behaves_like 'autocorrect', <<~SRC_RUBY,
         class Comment < ApplicationRecord
-          the_schema_is do |t|
+          the_schema_is "comments" do |t|
             t.text     "body"
             t.integer  "user_id"
             t.integer  "article_id"
@@ -310,7 +383,7 @@ RSpec.describe TheSchemaIs, :config_ns do
     SRC_RUBY
     <<~DST_RUBY
       class Comment < ApplicationRecord
-        the_schema_is do |t|
+        the_schema_is "comments" do |t|
           t.text     "body"
           t.integer  "user_id"
           t.integer  "article_id"
@@ -322,7 +395,7 @@ RSpec.describe TheSchemaIs, :config_ns do
 
     it_behaves_like 'autocorrect', <<~SRC_RUBY,
         class Comment < ApplicationRecord
-          the_schema_is do |t|
+          the_schema_is "comments" do |t|
             t.text     "body"
             t.integer  "user_id"
             t.integer  "article_id"
@@ -334,7 +407,7 @@ RSpec.describe TheSchemaIs, :config_ns do
     SRC_RUBY
     <<~DST_RUBY
       class Comment < ApplicationRecord
-        the_schema_is do |t|
+        the_schema_is "comments" do |t|
           t.text     "body"
           t.integer  "user_id"
           t.integer  "article_id"
@@ -349,7 +422,7 @@ RSpec.describe TheSchemaIs, :config_ns do
     specify {
       expect_no_offenses(<<~RUBY)
         class Comment < ApplicationRecord
-          the_schema_is do |t|
+          the_schema_is "comments" do |t|
             t.text     "body"
             t.integer  "user_id"
             t.integer  "article_id"
@@ -363,7 +436,7 @@ RSpec.describe TheSchemaIs, :config_ns do
     specify {
       expect_offense(<<~RUBY)
         class Comment < ApplicationRecord
-          the_schema_is do |t|
+          the_schema_is "comments" do |t|
             t.text     "body"
             t.integer  "user_id"
             t.string  "article_id"
@@ -378,7 +451,7 @@ RSpec.describe TheSchemaIs, :config_ns do
     specify {
       expect_offense(<<~RUBY)
         class Comment < ApplicationRecord
-          the_schema_is do |t|
+          the_schema_is "comments" do |t|
             t.text     "body"
             t.integer  "user_id"
             t.integer  "article_id"
@@ -394,7 +467,7 @@ RSpec.describe TheSchemaIs, :config_ns do
       # Shouldn't try to fail on unknown column, that's what UnknownColumn cop is for...
       expect_no_offenses(<<~RUBY)
         class Comment < ApplicationRecord
-          the_schema_is do |t|
+          the_schema_is "comments" do |t|
             t.text     "body"
             t.integer  "user_id"
             t.integer  "article_id"
@@ -408,7 +481,7 @@ RSpec.describe TheSchemaIs, :config_ns do
 
     it_behaves_like 'autocorrect', <<~SRC_RUBY,
         class Comment < ApplicationRecord
-          the_schema_is do |t|
+          the_schema_is "comments" do |t|
             t.text     "body"
             t.integer  "user_id"
             t.string   "article_id"
@@ -419,7 +492,7 @@ RSpec.describe TheSchemaIs, :config_ns do
     SRC_RUBY
     <<~DST_RUBY
       class Comment < ApplicationRecord
-        the_schema_is do |t|
+        the_schema_is "comments" do |t|
           t.text     "body"
           t.integer  "user_id"
           t.integer  "article_id"
