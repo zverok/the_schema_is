@@ -15,8 +15,12 @@ module TheSchemaIs
   using Cops::NodeRefinements
 
   module Cops
-    def self.schema_cache
-      @schema_cache ||= Hash.new { |h, path| h[path] = Cops::Parser.schema(path) }
+    class << self
+      extend Memoist
+
+      memoize def fetch_schema(path, remove_definition_attrs: [])
+        Cops::Parser.schema(path, remove_definition_attrs: remove_definition_attrs)
+      end
     end
   end
 
@@ -59,7 +63,9 @@ module TheSchemaIs
     end
 
     memoize def schema
-      Cops.schema_cache.dig(schema_path, model.table_name)
+      attrs_to_remove = cop_config['RemoveDefinitions']&.map(&:to_sym) || []
+      # It is OK if it returns Nil, just will be handled by "schema is absent" cop
+      Cops.fetch_schema(schema_path, remove_definition_attrs: attrs_to_remove)[model.table_name]
     end
 
     memoize def model_columns

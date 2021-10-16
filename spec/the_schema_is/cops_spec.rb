@@ -501,5 +501,137 @@ RSpec.describe TheSchemaIs::Cops, :config_ns do
         end
       end
     DST_RUBY
+
+    context 'with schema with many details' do
+      let(:real_config) { {Schema: 'db/schema_with_indexes.rb'} }
+
+      specify {
+        expect_offense(<<~RUBY)
+          class Articles < ApplicationRecord
+            the_schema_is "articles" do |t|
+              t.string   "title"
+              t.string   "slug"
+              ^^^^^^^^^^^^^^^^^ Wrong column definition: expected `t.string   "slug",            limit: 200, index: {name: "index_articles_on_slug", :unique=>true}`
+              t.text     "body"
+              t.string   "description"
+              t.integer  "favorites_count"
+              t.integer  "user_id"
+              ^^^^^^^^^^^^^^^^^^^^ Wrong column definition: expected `t.integer  "user_id",         foreign_key: {references: "users", name: "fk_articles_user_id", on_update: :restrict, on_delete: :cascade}`
+              t.datetime "created_at",      null: false
+              t.datetime "updated_at",      null: false
+            end
+          end
+        RUBY
+      }
+
+      it_behaves_like 'autocorrect', <<~SRC_RUBY,
+          class Articles < ApplicationRecord
+            the_schema_is "articles" do |t|
+              t.string   "title"
+              t.string   "slug"
+              t.text     "body"
+              t.string   "description"
+              t.integer  "favorites_count"
+              t.integer  "user_id"
+              t.datetime "created_at",      null: false
+              t.datetime "updated_at",      null: false
+            end
+          end
+      SRC_RUBY
+        <<~DST_RUBY
+          class Articles < ApplicationRecord
+            the_schema_is "articles" do |t|
+              t.string   "title"
+              t.string   "slug",            limit: 200, index: {name: "index_articles_on_slug", :unique=>true}
+              t.text     "body"
+              t.string   "description"
+              t.integer  "favorites_count"
+              t.integer  "user_id",         foreign_key: {references: "users", name: "fk_articles_user_id", on_update: :restrict, on_delete: :cascade}
+              t.datetime "created_at",      null: false
+              t.datetime "updated_at",      null: false
+            end
+          end
+        DST_RUBY
+
+      context 'with setting to ignore some keys' do
+        let(:real_config) { super().merge(RemoveDefinitions: %w[index foreign_key]) }
+
+        specify {
+          expect_offense(<<~RUBY)
+            class Articles < ApplicationRecord
+              the_schema_is "articles" do |t|
+                t.string   "title"
+                t.string   "slug"
+                ^^^^^^^^^^^^^^^^^ Wrong column definition: expected `t.string   "slug",            limit: 200`
+                t.text     "body"
+                t.string   "description"
+                t.integer  "favorites_count"
+                t.integer  "user_id"
+                t.datetime "created_at",      null: false
+                t.datetime "updated_at",      null: false
+              end
+            end
+          RUBY
+        }
+
+        it_behaves_like 'autocorrect', <<~SRC_RUBY,
+            class Articles < ApplicationRecord
+              the_schema_is "articles" do |t|
+                t.string   "title"
+                t.string   "slug"
+                t.text     "body"
+                t.string   "description"
+                t.integer  "favorites_count"
+                t.integer  "user_id"
+                t.datetime "created_at",      null: false
+                t.datetime "updated_at",      null: false
+              end
+            end
+        SRC_RUBY
+          <<~DST_RUBY
+            class Articles < ApplicationRecord
+              the_schema_is "articles" do |t|
+                t.string   "title"
+                t.string   "slug",            limit: 200
+                t.text     "body"
+                t.string   "description"
+                t.integer  "favorites_count"
+                t.integer  "user_id"
+                t.datetime "created_at",      null: false
+                t.datetime "updated_at",      null: false
+              end
+            end
+          DST_RUBY
+
+        it_behaves_like 'autocorrect', <<~SRC_RUBY,
+            class Articles < ApplicationRecord
+              the_schema_is "articles" do |t|
+                t.string   "title"
+                t.string   "slug",            limit: 200, index: {name: "index_articles_on_slug", :unique=>true}
+                t.text     "body"
+                t.string   "description"
+                t.integer  "favorites_count"
+                t.integer  "user_id",         foreign_key: {references: "users", name: "fk_articles_user_id", on_update: :restrict, on_delete: :cascade}
+                t.datetime "created_at",      null: false
+                t.datetime "updated_at",      null: false
+              end
+            end
+        SRC_RUBY
+          <<~DST_RUBY
+            class Articles < ApplicationRecord
+              the_schema_is "articles" do |t|
+                t.string   "title"
+                t.string   "slug",            limit: 200
+                t.text     "body"
+                t.string   "description"
+                t.integer  "favorites_count"
+                t.integer  "user_id"
+                t.datetime "created_at",      null: false
+                t.datetime "updated_at",      null: false
+              end
+            end
+          DST_RUBY
+      end
+    end
   end
 end

@@ -33,8 +33,10 @@ module TheSchemaIs
         RuboCop::AST::ProcessedSource.new(code, 2.7).ast
       end
 
-      def self.schema(path)
+      def self.schema(path, remove_definition_attrs: [])
         ast = parse(File.read(path))
+
+        ast = remove_attributes(ast, remove_definition_attrs) unless remove_definition_attrs.empty?
 
         ast.ast_search('(block (send nil? :create_table (str $_) _) _ $_)').to_h
       end
@@ -94,6 +96,29 @@ module TheSchemaIs
             Column.new(name: name, type: type, source: node) if COLUMN_DEFS.include?(type)
           end
         }.compact
+      end
+
+      # Removes unnecessary column definitions from further comparison, using schema source tree editing
+      def self.remove_attributes(ast, attrs_to_remove)
+        buf = ast.loc.expression.source_buffer
+        src = buf.source
+        rewriter = ::Parser::Source::TreeRewriter.new(buf)
+
+        # FIXME: Two nested cycles can be simplifid to just look for column definition, probably
+        ast.ast_search('(block (send nil? :create_table (str _) _) _ $_)').each do |table_def|
+          table_def.children.each do |col|
+            dfn = col.children[3] or next
+            dfn.children
+               .select { |c| attrs_to_remove.include?(c.children[0].children[0]) }
+               .each do |c|
+              prev_comma = c.source_range.begin_pos.step(by: -1).find { |pos| src[pos] == ',' }
+              range = ::Parser::Source::Range.new(buf, prev_comma, c.source_range.end_pos)
+              rewriter.remove(range)
+            end
+          end
+        end
+
+        RuboCop::AST::ProcessedSource.new(rewriter.process, 2.7).ast
       end
     end
   end
