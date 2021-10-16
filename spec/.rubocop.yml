@@ -14,3 +14,6 @@ Metrics/BlockLength:
 
 RSpec/ExampleLength:
   Enabled: false
+
+RSpec/NestedGroups:
+  Enabled: false

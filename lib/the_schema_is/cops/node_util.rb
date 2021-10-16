@@ -66,7 +66,7 @@ module TheSchemaIs
         end
 
         def find_parent(type)
-          Enumerator.produce(parent, &:parent).slice_after { |n| n && n.type == type }.first.last
+          Enumerator.produce(parent, &:parent).find { |n| n && n.type == type }
         end
       end
     end

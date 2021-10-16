@@ -6,6 +6,7 @@ TheSchemaIs:
   Schema: db/schema.rb
   BaseClass: ['ActiveRecord::Base', 'ApplicationRecord']
   TablePrefix: ''
+  RemoveDefinitions: []
 
 TheSchemaIs/Presence:
    Description: "Check presence of the_schema_is statement in ActiveRecord models"
