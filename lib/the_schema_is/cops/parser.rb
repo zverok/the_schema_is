@@ -15,7 +15,7 @@ module TheSchemaIs
                                  float integer json string text time timestamp virtual].freeze
       POSTGRES_COLUMN_TYPES = %i[jsonb inet cidr macaddr hstore uuid].freeze
 
-      COLUMN_DEFS = (STANDARD_COLUMN_TYPES + POSTGRES_COLUMN_TYPES + %i[column]).freeze
+      COLUMN_DEFS = (STANDARD_COLUMN_TYPES + POSTGRES_COLUMN_TYPES + %i[enum column]).freeze
 
       Model = Struct.new(:class_name, :table_name, :source, :schema, :table_name_node,
                          keyword_init: true)
