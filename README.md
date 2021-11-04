@@ -134,8 +134,9 @@ TheSchemaIs:
 Currently available settings are:
 
 * `TablePrefix` to help `the_schema_is` deduce table name from class name;
-* `Schema` to set path to schema (by default `db/schema.rb`)
-* `BaseClass` to help `the_schema_is` guess what is a model class (by default `ApplicationRecord` and `ActiveRecord::Base`).
+* `Schema` to set path to schema (by default `db/schema.rb`);
+* `BaseClass` to help `the_schema_is` guess what is a model class (by default `ApplicationRecord` and `ActiveRecord::Base`);
+* `RemoveDefinitions`: list of definition keys to remove (for example, `[index, foreign_key, limit]`) when copying definitions into models; this might be desirable for leaner `the_schema_is` statements, displaying only field types/names.
 
 So, if you have your custom-named base class, you should do:
 

@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    the_schema_is (0.0.4)
+    the_schema_is (0.0.5)
       activesupport
       backports (>= 3.16.0)
       memoist
