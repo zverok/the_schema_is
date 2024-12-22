@@ -8,7 +8,7 @@ AllCops:
     - 'spec/fixtures/**/*.rb'
     - 'spec/spec_helper.rb'
   DisplayCopNames: true
-  TargetRubyVersion: 2.5
+  TargetRubyVersion: 2.7
   NewCops: enable
   SuggestExtensions: false
 
@@ -16,7 +16,7 @@ AllCops:
 
 Layout/LineLength:
   Max: 100
-  IgnoredPatterns: ['\#.*'] # ignore long comments
+  AllowedPatterns: ['\#.*'] # ignore long comments
 
 Style/AndOr:
   EnforcedStyle: conditionals
@@ -32,6 +32,12 @@ Style/BlockDelimiters:
 
 Layout/SpaceInsideHashLiteralBraces:
   EnforcedStyle: no_space
+
+Lint/AmbiguousOperatorPrecedence:
+  Enabled: false
+
+Style/SafeNavigationChainLength:
+  Enabled: false
 
 # Auto-correcting is hard job!
 

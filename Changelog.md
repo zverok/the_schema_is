@@ -1,5 +1,11 @@
 # the-schema-is changes
 
+## 2024-12-22 - 0.0.6
+
+* Drop support for Ruby < 2.7;
+* Ensure support for all Ruby versions from 2.7 to 3.4-dev (replace memoist with memery);
+* Slightly update code with the new Rubocop.
+
 ## 2021-11-04 - 0.0.5
 
 * Support `enum` column type;

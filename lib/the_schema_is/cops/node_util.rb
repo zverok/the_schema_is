@@ -15,7 +15,7 @@ module TheSchemaIs
       extend RuboCop::AST::NodePattern::Macros
 
       class << self
-        extend Memoist
+        include Memery
 
         def search(pattern, node)
           search_methods[pattern].then { |m| instance.send(m, node) }

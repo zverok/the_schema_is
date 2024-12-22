@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require 'memoist'
+require 'memery'
 require 'rubocop'
 require 'backports/latest'
 
@@ -16,7 +16,7 @@ module TheSchemaIs
 
   module Cops
     class << self
-      extend Memoist
+      include Memery
 
       memoize def fetch_schema(path, remove_definition_attrs: [])
         Cops::Parser.schema(path, remove_definition_attrs: remove_definition_attrs)
@@ -25,7 +25,7 @@ module TheSchemaIs
   end
 
   module Common
-    extend Memoist
+    include Memery
 
     def self.included(cls)
       cls.define_singleton_method(:badge) do
@@ -189,7 +189,7 @@ module TheSchemaIs
     def register_offense(_node)
       return if model.schema.nil? || schema.nil?
 
-      extra_columns.each do |_, col|
+      extra_columns.each_value do |col|
         add_offense(col.source, message: MSG % col.name) do |corrector|
           src_range = col.source.loc.expression
           end_pos = col.source.next_sibling.then { |n|
