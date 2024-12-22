@@ -51,7 +51,7 @@ RSpec.describe TheSchemaIs::Cops::Parser do
         end
       end
       RUBY
-      {class_name: 'User', table_name: 'users', schema: ::Parser::AST::Node}
+      {class_name: 'User', table_name: 'users', schema: Parser::AST::Node}
 
     it_behaves_like 'model extractor',
       <<~RUBY,
@@ -61,7 +61,7 @@ RSpec.describe TheSchemaIs::Cops::Parser do
         end
       end
       RUBY
-      {class_name: 'User', table_name: 'users', schema: ::Parser::AST::Node}
+      {class_name: 'User', table_name: 'users', schema: Parser::AST::Node}
 
     it_behaves_like 'model extractor',
       <<~RUBY,
@@ -79,14 +79,14 @@ RSpec.describe TheSchemaIs::Cops::Parser do
 
     it { is_expected.to be_a(Hash) }
     its(:keys) { is_expected.to start_with('articles', 'comments', 'favorites') }
-    its(:values) { is_expected.to all be_a ::Parser::AST::Node }
+    its(:values) { is_expected.to all be_a Parser::AST::Node }
   end
 
   describe '.columns' do
     shared_examples 'column extractor' do |code, attrs|
       subject { described_class.columns(described_class.parse(code)) }
 
-      it { is_expected.to contain_exactly(*attrs.map { |a| have_attributes(a) }) }
+      it { is_expected.to match_array(attrs.map { |a| have_attributes(a) }) }
     end
 
     it_behaves_like 'column extractor',

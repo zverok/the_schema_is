@@ -70,8 +70,7 @@ module TheSchemaIs
 
         Model.new(
           class_name: class_name,
-          table_name: table_name ||
-            table_prefix.+(ActiveSupport::Inflector.tableize(class_name)),
+          table_name: table_name || table_prefix + ActiveSupport::Inflector.tableize(class_name),
           source: definition_node,
           schema: schema_node,
           table_name_node: name_node&.first

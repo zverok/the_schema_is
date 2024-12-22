@@ -1,6 +1,6 @@
 Gem::Specification.new do |s|
   s.name     = 'the_schema_is'
-  s.version  = '0.0.5'
+  s.version  = '0.0.6'
   s.authors  = ['Victor Shepelev']
   s.email    = 'zverok.offline@gmail.com'
   s.homepage = 'https://github.com/zverok/the_schema_is'
@@ -12,7 +12,7 @@ Gem::Specification.new do |s|
   EOF
   s.licenses = ['MIT']
 
-  s.required_ruby_version = '>= 2.5.0'
+  s.required_ruby_version = '>= 2.7.0'
 
   s.files = `git ls-files lib config LICENSE.txt *.md`.split($RS)
   s.require_paths = ["lib"]
@@ -20,7 +20,7 @@ Gem::Specification.new do |s|
   s.add_runtime_dependency 'backports', '>= 3.16.0'
   s.add_runtime_dependency 'rubocop', '>= 1.0.0'
   s.add_runtime_dependency 'activesupport' # it is a plugin for ActiveRecord anyways, and we need perfectly same inflection
-  s.add_runtime_dependency 'memoist'
+  s.add_runtime_dependency 'memery'
 
   s.add_development_dependency 'rubocop-rspec'
   s.add_development_dependency 'rake'
